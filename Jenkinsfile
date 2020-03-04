@@ -118,7 +118,7 @@ pipeline {
                     sh "gradle shadowJar"
                     sh "gradle dockerPush"
                   }
-                 }
+                }
               }
         }
       }
