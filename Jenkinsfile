@@ -7,30 +7,13 @@ pipeline {
     skipDefaultCheckout()
     buildDiscarder(logRotator(numToKeepStr: '20'))
     timestamps()
+    disableConcurrentBuilds()
   }
-  agent any
+  agent {
+    label 'd3-build-agent'
+  }
   stages {
-    stage('Stop same job builds') {
-      agent { label 'master' }
-      steps {
-        script {
-          def scmVars = checkout scm
-          // need this for develop->master PR cases
-          // CHANGE_BRANCH is not defined if this is a branch build
-          try {
-            scmVars.CHANGE_BRANCH_LOCAL = scmVars.CHANGE_BRANCH
-          }
-          catch (MissingPropertyException e) {
-          }
-          if (scmVars.GIT_LOCAL_BRANCH != "develop" && scmVars.CHANGE_BRANCH_LOCAL != "develop") {
-            def builds = load ".jenkinsci/cancel-builds-same-job.groovy"
-            builds.cancelSameJobBuilds()
-          }
-        }
-      }
-    }
     stage('Tests') {
-      agent { label 'd3-build-agent' }
       steps {
         script {
           def scmVars = checkout scm
@@ -118,9 +101,7 @@ pipeline {
         }
       }
     }
-
     stage('Build and push docker images') {
-      agent { label 'd3-build-agent' }
       steps {
         script {
           def scmVars = checkout scm
