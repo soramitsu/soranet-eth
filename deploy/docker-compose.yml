@@ -67,7 +67,7 @@ services:
       - d3-network
 
   data-collector:
-    image: nexus.iroha.tech:19002/soranet/data-collector:develop
+    image: nexus.iroha.tech:19002/d3-deploy/data-collector:develop
     container_name: "data-collector"
     restart: on-failure
     ports:
