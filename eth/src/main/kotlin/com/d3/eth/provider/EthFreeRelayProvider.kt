@@ -13,31 +13,37 @@ import mu.KLogging
 /**
  * Provides with free ethereum relay wallet
  * @param queryHelper - iroha queries network layer
- * @param notaryIrohaAccount - Master notary account in Iroha to write down the information about free relay wallets has been added
+ * @param storageAccount - account in Iroha to write down the information about free relay wallets has been added
  */
 // TODO Prevent double relay accounts usage (in perfect world it is on Iroha side with custom code). In real world
 // on provider side with some synchronization.
 class EthFreeRelayProvider(
     private val queryHelper: IrohaQueryHelper,
-    private val notaryIrohaAccount: String,
-    private val registrationIrohaAccount: String
+    private val storageAccount: String,
+    private val setterAccount: String
 ) {
+
+    private val freeRelayPredicate = { _: String, value: String -> value == "free" }
 
     init {
         logger.info {
-            "Init free relay provider with holder account '$notaryIrohaAccount' and setter account '$registrationIrohaAccount'"
+            "Init free relay provider with holder account '$storageAccount' and setter account '$setterAccount'"
         }
     }
 
     /**
-     * Get first free ethereum relay wallet.
-     * @return free ethereum relay wallet
+     * Get first free Ethereum relay wallet.
+     * @return free Ethereum relay wallet
      */
     fun getRelay(): Result<String, Exception> {
-        return getRelays().map { freeWallets ->
-            if (freeWallets.isEmpty())
-                throw IllegalStateException("EthFreeRelayProvider - no free relay wallets created by $registrationIrohaAccount")
-            freeWallets.first()
+        return queryHelper.getAccountDetailsFirst(
+            storageAccount,
+            setterAccount,
+            freeRelayPredicate
+        ).map { freeWallet ->
+            if (!freeWallet.isPresent)
+                throw IllegalStateException("EthFreeRelayProvider - no free relay wallets created by $setterAccount")
+            freeWallet.get().key
         }
     }
 
@@ -46,12 +52,25 @@ class EthFreeRelayProvider(
      * @return free Ethereum relay wallets
      */
     fun getRelays(): Result<Set<String>, Exception> {
-        return queryHelper.getAccountDetails(
-            notaryIrohaAccount,
-            registrationIrohaAccount
+        return queryHelper.getAccountDetailsFilter(
+            storageAccount,
+            setterAccount,
+            freeRelayPredicate
         ).map { relays ->
-            relays.filterValues { irohaAccount -> irohaAccount == "free" }.keys
+            relays.keys
         }
+    }
+
+    /**
+     * Get number of all free Ethereum relay wallets
+     * @return number of free Ethereum relay wallets
+     */
+    fun getRelaysCount(): Result<Int, Exception> {
+        return queryHelper.getAccountDetailsCount(
+            storageAccount,
+            setterAccount,
+            freeRelayPredicate
+        )
     }
 
     /**

@@ -5,59 +5,134 @@
 
 package com.d3.eth.deposit
 
-import com.d3.commons.config.EthereumPasswords
+import com.d3.chainadapter.client.RMQConfig
+import com.d3.chainadapter.client.ReliableIrohaChainListener
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.notary.Notary
 import com.d3.commons.notary.NotaryImpl
 import com.d3.commons.notary.endpoint.ServerInitializationBundle
 import com.d3.commons.sidechain.SideChainEvent
+import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
+import com.d3.commons.sidechain.provider.FileBasedLastReadBlockProvider
+import com.d3.commons.util.createPrettyFixThreadPool
 import com.d3.commons.util.createPrettyScheduledThreadPool
+import com.d3.commons.util.createPrettySingleThreadPool
+import com.d3.eth.deposit.endpoint.EthAddPeerStrategyImpl
 import com.d3.eth.deposit.endpoint.EthRefundStrategyImpl
 import com.d3.eth.deposit.endpoint.RefundServerEndpoint
-import com.d3.eth.provider.EthRelayProvider
+import com.d3.eth.provider.EthAddressProvider
 import com.d3.eth.provider.EthTokensProvider
+import com.d3.eth.registration.wallet.EthereumWalletRegistrationHandler
 import com.d3.eth.sidechain.EthChainHandler
 import com.d3.eth.sidechain.EthChainListener
 import com.d3.eth.sidechain.util.BasicAuthenticator
+import com.d3.eth.sidechain.util.ENDPOINT_ETHEREUM
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.flatMap
 import com.github.kittinunf.result.map
+import integration.eth.config.EthereumPasswords
 import io.reactivex.Observable
-import iroha.protocol.Primitive
+import io.reactivex.schedulers.Schedulers
 import jp.co.soramitsu.iroha.java.IrohaAPI
-import jp.co.soramitsu.iroha.java.Transaction
 import mu.KLogging
 import okhttp3.OkHttpClient
+import org.web3j.crypto.ECKeyPair
+import org.web3j.crypto.WalletUtils
 import org.web3j.protocol.Web3j
 import org.web3j.protocol.core.JsonRpc2_0Web3j
 import org.web3j.protocol.http.HttpService
 import java.math.BigInteger
-
-const val ENDPOINT_ETHEREUM = "eth"
+import kotlin.system.exitProcess
 
 /**
  * Class for deposit instantiation
- * @param ethRelayProvider - provides with white list of ethereum wallets
+ * @param ethWalletProvider - provides with white list of ethereum wallets
+ * @param ethRelayProvider - provides with white list of ethereum relays
  * @param ethTokensProvider - provides with white list of ethereum ERC20 tokens
+ * @param registrationHandler - iroha-based wallet registration handler
  */
 class EthDepositInitialization(
     private val notaryCredential: IrohaCredential,
     private val irohaAPI: IrohaAPI,
     private val ethDepositConfig: EthDepositConfig,
     private val passwordsConfig: EthereumPasswords,
-    private val ethRelayProvider: EthRelayProvider,
-    private val ethTokensProvider: EthTokensProvider
+    rmqConfig: RMQConfig,
+    private val ethWalletProvider: EthAddressProvider,
+    private val ethRelayProvider: EthAddressProvider,
+    private val ethTokensProvider: EthTokensProvider,
+    private val registrationHandler: EthereumWalletRegistrationHandler
 ) {
+    private var ecKeyPair: ECKeyPair = WalletUtils.loadCredentials(
+        passwordsConfig.credentialsPassword,
+        passwordsConfig.credentialsPath
+    ).ecKeyPair
+
+    private val queryHelper = IrohaQueryHelperImpl(irohaAPI, notaryCredential)
+
+    private val irohaChainListener = ReliableIrohaChainListener(
+        rmqConfig,
+        ethDepositConfig.ethIrohaDepositQueue,
+        consumerExecutorService = createPrettySingleThreadPool(
+            ETH_DEPOSIT_SERVICE_NAME,
+            "rmq-consumer"
+        )
+    )
+
+    private val expansionStrategy = EthereumDepositExpansionStrategy(
+        notaryCredential,
+        irohaAPI,
+        ethDepositConfig
+    )
+
+    private val withdrawalProofHandler = WithdrawalProofHandler(
+        ethDepositConfig.notaryCredential.accountId,
+        ethTokensProvider,
+        ethWalletProvider,
+        ethDepositConfig,
+        passwordsConfig,
+        irohaAPI
+    )
+
+    init {
+        logger.info {
+            "Init deposit ethAddress=" +
+                    WalletUtils.loadCredentials(
+                        passwordsConfig.credentialsPassword,
+                        passwordsConfig.credentialsPath
+                    ).address
+        }
+    }
+
     /**
      * Init notary
      */
     fun init(): Result<Unit, Exception> {
         logger.info { "Eth deposit initialization" }
         return initEthChain()
-            .map { ethEvent ->
-                initNotary(ethEvent)
-            }
+            .map { ethEvent -> initNotary(ethEvent) }
             .flatMap { notary -> notary.initIrohaConsumer() }
+            .flatMap { irohaChainListener.getBlockObservable() }
+            .flatMap { irohaObservable ->
+                irohaObservable
+                    .observeOn(
+                        Schedulers.from(
+                            createPrettyFixThreadPool(
+                                ETH_DEPOSIT_SERVICE_NAME,
+                                "event-handler"
+                            )
+                        )
+                    ).subscribe(
+                        { (block, _) ->
+                            expansionStrategy.filterAndExpand(block)
+                            registrationHandler.filterAndRegister(block)
+                            withdrawalProofHandler.proceedBlock(block)
+                        }, { ex ->
+                            logger.error("Withdrawal observable error", ex)
+                            exitProcess(1)
+                        }
+                    )
+                irohaChainListener.listen()
+            }
             .map { initRefund() }
     }
 
@@ -77,10 +152,19 @@ class EthDepositInitialization(
         )
 
         /** List of all observable wallets */
-        val ethHandler = EthChainHandler(web3, ethRelayProvider, ethTokensProvider)
+        val ethHandler = EthChainHandler(
+            web3,
+            ethDepositConfig.ethMasterAddress,
+            ethWalletProvider,
+            ethRelayProvider,
+            ethTokensProvider
+        )
         return EthChainListener(
             web3,
-            BigInteger.valueOf(ethDepositConfig.ethereum.confirmationPeriod)
+            BigInteger.valueOf(ethDepositConfig.ethereum.confirmationPeriod),
+            ethDepositConfig.startEthereumBlock,
+            FileBasedLastReadBlockProvider(ethDepositConfig.lastEthereumReadBlockFilePath),
+            ethDepositConfig.ignoreStartBlock
         ).getBlockObservable()
             .map { observable ->
                 observable.flatMapIterable { ethHandler.parseBlock(it) }
@@ -94,17 +178,6 @@ class EthDepositInitialization(
         ethEvents: Observable<SideChainEvent.PrimaryBlockChainEvent>
     ): Notary {
         logger.info { "Init ethereum notary" }
-
-        irohaAPI.transactionSync(
-            Transaction.builder(notaryCredential.accountId)
-                .grantPermission(
-                    ethDepositConfig.withdrawalAccountId,
-                    Primitive.GrantablePermission.can_transfer_my_assets
-                )
-                .sign(notaryCredential.keyPair)
-                .build()
-        )
-
         return NotaryImpl(notaryCredential, irohaAPI, ethEvents)
     }
 
@@ -113,8 +186,10 @@ class EthDepositInitialization(
      */
     private fun initRefund() {
         logger.info { "Init Refund endpoint" }
+        val serverBundle =
+            ServerInitializationBundle(ethDepositConfig.refund.port, ENDPOINT_ETHEREUM)
         RefundServerEndpoint(
-            ServerInitializationBundle(ethDepositConfig.refund.port, ENDPOINT_ETHEREUM),
+            serverBundle,
             EthRefundStrategyImpl(
                 ethDepositConfig,
                 irohaAPI,
@@ -122,6 +197,12 @@ class EthDepositInitialization(
                 ethDepositConfig.ethereum,
                 passwordsConfig,
                 ethTokensProvider
+            ),
+            EthAddPeerStrategyImpl(
+                queryHelper,
+                ecKeyPair,
+                ethDepositConfig.expansionTriggerAccount,
+                ethDepositConfig.expansionTriggerCreatorAccountId
             )
         )
     }

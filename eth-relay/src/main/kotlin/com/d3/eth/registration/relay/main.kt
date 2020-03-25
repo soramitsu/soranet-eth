@@ -7,24 +7,20 @@
 
 package com.d3.eth.registration.relay
 
-import com.d3.commons.config.loadEthPasswords
 import com.d3.commons.config.loadLocalConfigs
 import com.d3.commons.model.IrohaCredential
-import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
-import com.d3.eth.env.ETH_MASTER_WALLET_ENV
-import com.d3.eth.env.ETH_RELAY_IMPLEMENTATION_ADDRESS_ENV
+import integration.eth.config.loadEthPasswords
 import com.d3.eth.provider.EthFreeRelayProvider
-import com.github.kittinunf.result.Result
-import com.github.kittinunf.result.failure
-import com.github.kittinunf.result.fanout
-import com.github.kittinunf.result.flatMap
-import com.github.kittinunf.result.map
+import com.github.kittinunf.result.*
 import jp.co.soramitsu.iroha.java.IrohaAPI
 import jp.co.soramitsu.iroha.java.Utils
 import mu.KLogging
+import kotlin.system.exitProcess
 
 private val logger = KLogging().logger
+
+const val RELAY_REGISTRATION_OPERATION = "Ethereum relay registration"
 
 /**
  * Entry point for deployment of relay smart contracts that will be used in client registration.
@@ -39,22 +35,7 @@ fun main(args: Array<String>) {
         "relay-registration",
         RelayRegistrationConfig::class.java,
         "relay_registration.properties"
-    ).map { relayRegistrationConfig ->
-        object : RelayRegistrationConfig {
-            override val number = relayRegistrationConfig.number
-            override val replenishmentPeriod = relayRegistrationConfig.replenishmentPeriod
-            override val ethMasterWallet =
-                System.getenv(ETH_MASTER_WALLET_ENV) ?: relayRegistrationConfig.ethMasterWallet
-            override val ethRelayImplementationAddress =
-                System.getenv(ETH_RELAY_IMPLEMENTATION_ADDRESS_ENV)
-                    ?: relayRegistrationConfig.ethRelayImplementationAddress
-            override val notaryIrohaAccount = relayRegistrationConfig.notaryIrohaAccount
-            override val relayRegistrationCredential =
-                relayRegistrationConfig.relayRegistrationCredential
-            override val iroha = relayRegistrationConfig.iroha
-            override val ethereum = relayRegistrationConfig.ethereum
-        }
-    }.fanout {
+    ).fanout {
         loadEthPasswords(
             "relay-registration",
             "/eth/ethereum_password.properties"
@@ -76,15 +57,18 @@ fun main(args: Array<String>) {
             ).use { irohaAPI ->
                 val queryHelper =
                     IrohaQueryHelperImpl(irohaAPI, credential.accountId, credential.keyPair)
+
                 val freeRelayProvider = EthFreeRelayProvider(
                     queryHelper,
-                    relayRegistrationConfig.notaryIrohaAccount,
+                    relayRegistrationConfig.relayStorageAccount,
                     relayRegistrationConfig.relayRegistrationCredential.accountId
                 )
 
                 val relayRegistration = RelayRegistration(
                     freeRelayProvider,
                     relayRegistrationConfig,
+                    relayRegistrationConfig.ethMasterAddress,
+                    relayRegistrationConfig.ethRelayImplementationAddress,
                     credential,
                     irohaAPI,
                     passwordConfig
@@ -98,7 +82,7 @@ fun main(args: Array<String>) {
             }
         }.failure { ex ->
             logger.error("Cannot run relay deployer", ex)
-            System.exit(1)
+            exitProcess(1)
         }
     }
 }

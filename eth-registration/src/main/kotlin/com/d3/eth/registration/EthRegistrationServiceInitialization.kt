@@ -5,14 +5,13 @@
 
 package com.d3.eth.registration
 
-import com.d3.commons.config.EthereumPasswords
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.registration.RegistrationServiceEndpoint
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
-import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
+import com.d3.eth.provider.ETH_RELAY
 import com.d3.eth.provider.EthFreeRelayProvider
-import com.d3.eth.provider.EthRelayProviderIrohaImpl
+import com.d3.eth.provider.EthAddressProviderIrohaImpl
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.map
 import jp.co.soramitsu.iroha.java.IrohaAPI
@@ -26,7 +25,6 @@ import mu.KLogging
  */
 class EthRegistrationServiceInitialization(
     private val ethRegistrationConfig: EthRegistrationConfig,
-    private val passwordConfig: EthereumPasswords,
     private val irohaAPI: IrohaAPI
 ) {
 
@@ -55,13 +53,14 @@ class EthRegistrationServiceInitialization(
                 Pair(
                     EthFreeRelayProvider(
                         queryHelper,
-                        ethRegistrationConfig.notaryIrohaAccount,
+                        ethRegistrationConfig.relayStorageAccount,
                         ethRegistrationConfig.relayRegistrationIrohaAccount
                     ),
-                    EthRelayProviderIrohaImpl(
+                    EthAddressProviderIrohaImpl(
                         queryHelper,
-                        ethRegistrationConfig.notaryIrohaAccount,
-                        ethRegistrationConfig.relayRegistrationIrohaAccount
+                        ethRegistrationConfig.relayStorageAccount,
+                        ethRegistrationConfig.relayRegistrationIrohaAccount,
+                        ETH_RELAY
                     )
                 ),
                 IrohaConsumerImpl(credential, irohaAPI)
@@ -71,10 +70,8 @@ class EthRegistrationServiceInitialization(
             EthRegistrationStrategyImpl(
                 ethFreeRelayProvider,
                 ethRelayProvider,
-                ethRegistrationConfig,
-                passwordConfig,
                 irohaConsumer,
-                ethRegistrationConfig.notaryIrohaAccount
+                ethRegistrationConfig.relayStorageAccount
             )
         }.map { registrationStrategy ->
             RegistrationServiceEndpoint(

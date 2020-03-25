@@ -10,15 +10,21 @@ plugins {
 }
 
 dependencies {
-    compile project(":eth")
+    implementation project(":eth-registration")
+    implementation project(":eth")
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+
+    implementation "com.github.d3ledger.notary:notary-commons:$notary_version"
+    implementation "com.github.soramitsu.chain-adapter:chain-adapter-client:$chain_adapter_client_version"
+
+    implementation "org.web3j:core:$web3j_version"
 }
 
 apply plugin: 'application'
 apply plugin: 'kotlin'
 apply plugin: 'com.github.johnrengelman.shadow'
-mainClassName = "com.d3.eth.deposit.EthDepositMain"
 
+mainClassName = "com.d3.eth.deposit.EthDepositMain"
 shadowDistZip.classifier = 'shadow'
 shadowDistTar.classifier = 'shadow'
 // name of jar file that the shadowJar plugin generates

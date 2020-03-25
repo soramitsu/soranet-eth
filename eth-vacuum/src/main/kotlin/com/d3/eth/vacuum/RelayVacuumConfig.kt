@@ -5,10 +5,9 @@
 
 package com.d3.eth.vacuum
 
-import com.d3.commons.config.EthereumConfig
 import com.d3.commons.config.IrohaConfig
-import com.d3.commons.config.IrohaCredentialConfig
 import com.d3.commons.config.IrohaCredentialRawConfig
+import integration.eth.config.EthereumConfig
 
 interface RelayVacuumConfig {
 
@@ -28,7 +27,7 @@ interface RelayVacuumConfig {
     val irohaAnchoredTokenSetterAccount: String
 
     /** Notary Iroha account that stores relay register */
-    val notaryIrohaAccount: String
+    val relayStorageAccount: String
 
     /** Iroha configurations */
     val iroha: IrohaConfig

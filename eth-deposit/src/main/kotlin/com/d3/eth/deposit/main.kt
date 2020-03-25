@@ -7,41 +7,67 @@
 
 package com.d3.eth.deposit
 
-import com.d3.commons.config.EthereumPasswords
-import com.d3.commons.config.loadEthPasswords
+import com.d3.chainadapter.client.RMQConfig
 import com.d3.commons.config.loadLocalConfigs
+import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.model.IrohaCredential
-import com.d3.commons.sidechain.iroha.util.ModelUtil
+import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
-import com.d3.eth.provider.EthRelayProviderIrohaImpl
+import com.d3.eth.provider.ETH_RELAY
+import com.d3.eth.provider.ETH_WALLET
+import com.d3.eth.provider.EthAddressProviderIrohaImpl
 import com.d3.eth.provider.EthTokensProviderImpl
+import com.d3.eth.registration.EthRegistrationConfig
+import com.d3.eth.registration.wallet.EthereumWalletRegistrationHandler
 import com.github.kittinunf.result.*
+import integration.eth.config.EthereumPasswords
+import integration.eth.config.loadEthPasswords
 import jp.co.soramitsu.iroha.java.IrohaAPI
 import jp.co.soramitsu.iroha.java.Utils
 import mu.KLogging
+import kotlin.system.exitProcess
 
 private val logger = KLogging().logger
 
+const val REFUND_OPERATION = "Ethereum refund"
 const val ETH_DEPOSIT_SERVICE_NAME = "eth-deposit"
 
 /**
  * Application entry point
  */
-fun main(args: Array<String>) {
+fun main() {
     loadLocalConfigs("eth-deposit", EthDepositConfig::class.java, "deposit.properties")
         .fanout { loadEthPasswords("eth-deposit", "/eth/ethereum_password.properties") }
         .map { (depositConfig, ethereumPasswords) ->
-            executeDeposit(ethereumPasswords, depositConfig)
+            val rmqConfig = loadRawLocalConfigs(
+                "rmq",
+                RMQConfig::class.java,
+                "rmq.properties"
+            )
+            val ethRegistrtaionConfig = loadLocalConfigs(
+                "eth-registration",
+                EthRegistrationConfig::class.java,
+                "registration.properties"
+            ).get()
+
+            executeDeposit(
+                ethereumPasswords,
+                depositConfig,
+                rmqConfig,
+                ethRegistrtaionConfig
+            )
         }
         .failure { ex ->
             logger.error("Cannot run eth deposit", ex)
-            System.exit(1)
+            exitProcess(1)
         }
 }
 
 fun executeDeposit(
     ethereumPasswords: EthereumPasswords,
-    depositConfig: EthDepositConfig
+    depositConfig: EthDepositConfig,
+    rmqConfig: RMQConfig,
+    registrationConfig: EthRegistrationConfig
 ) {
     Result.of {
         val keypair = Utils.parseHexKeypair(
@@ -49,11 +75,17 @@ fun executeDeposit(
             depositConfig.notaryCredential.privkey
         )
         IrohaCredential(depositConfig.notaryCredential.accountId, keypair)
-    }.flatMap { irohaCredential ->
-        executeDeposit(irohaCredential, ethereumPasswords, depositConfig)
+    }.flatMap { notaryIrohaCredential ->
+        executeDeposit(
+            notaryIrohaCredential,
+            ethereumPasswords,
+            depositConfig,
+            rmqConfig,
+            registrationConfig
+        )
     }.failure { ex ->
         logger.error("Cannot run eth deposit", ex)
-        System.exit(1)
+        exitProcess(1)
     }
 }
 
@@ -61,7 +93,9 @@ fun executeDeposit(
 fun executeDeposit(
     irohaCredential: IrohaCredential,
     ethereumPasswords: EthereumPasswords,
-    depositConfig: EthDepositConfig
+    depositConfig: EthDepositConfig,
+    rmqConfig: RMQConfig,
+    registrationConfig: EthRegistrationConfig
 ): Result<Unit, Exception> {
     logger.info { "Run ETH deposit" }
 
@@ -76,10 +110,17 @@ fun executeDeposit(
         irohaCredential.keyPair
     )
 
-    val ethRelayProvider = EthRelayProviderIrohaImpl(
+    val ethWalletProvider = EthAddressProviderIrohaImpl(
         queryHelper,
-        irohaCredential.accountId,
-        depositConfig.registrationServiceIrohaAccount
+        depositConfig.ethereumWalletStorageAccount,
+        depositConfig.ethereumWalletSetterAccount,
+        ETH_WALLET
+    )
+    val ethRelayProvider = EthAddressProviderIrohaImpl(
+        queryHelper,
+        depositConfig.ethereumRelayStorageAccount,
+        depositConfig.ethereumRelaySetterAccount,
+        ETH_RELAY
     )
     val ethTokensProvider = EthTokensProviderImpl(
         queryHelper,
@@ -88,12 +129,24 @@ fun executeDeposit(
         depositConfig.irohaAnchoredTokenStorageAccount,
         depositConfig.irohaAnchoredTokenSetterAccount
     )
+
+    val registrationHandler = EthereumWalletRegistrationHandler(
+        IrohaConsumerImpl(irohaCredential, irohaAPI),
+        registrationConfig.registrationCredential.accountId,
+        depositConfig.ethereumWalletStorageAccount,
+        ethWalletProvider,
+        ethRelayProvider
+    )
+
     return EthDepositInitialization(
         irohaCredential,
         irohaAPI,
         depositConfig,
         ethereumPasswords,
+        rmqConfig,
+        ethWalletProvider,
         ethRelayProvider,
-        ethTokensProvider
+        ethTokensProvider,
+        registrationHandler
     ).init()
 }

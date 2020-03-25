@@ -5,16 +5,15 @@
 
 package com.d3.eth.registration
 
-import com.d3.commons.config.EthereumPasswords
-import com.d3.commons.registration.IrohaAccountRegistrator
+import com.d3.commons.model.D3ErrorException
 import com.d3.commons.registration.RegistrationStrategy
+import com.d3.commons.registration.SideChainRegistrator
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
+import com.d3.eth.provider.ETH_RELAY
+import com.d3.eth.provider.EthAddressProvider
 import com.d3.eth.provider.EthFreeRelayProvider
-import com.d3.eth.provider.EthRelayProvider
-import com.d3.eth.sidechain.util.DeployHelper
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.flatMap
-import com.github.kittinunf.result.map
 import mu.KLogging
 
 /**
@@ -22,27 +21,20 @@ import mu.KLogging
  */
 class EthRegistrationStrategyImpl(
     private val ethFreeRelayProvider: EthFreeRelayProvider,
-    private val ethRelayProvider: EthRelayProvider,
-    ethRegistrationConfig: EthRegistrationConfig,
-    ethPasswordConfig: EthereumPasswords,
+    private val ethAddressProvider: EthAddressProvider,
     private val irohaConsumer: IrohaConsumer,
-    private val notaryIrohaAccount: String
+    relayStorageAccount: String
 ) : RegistrationStrategy {
 
     init {
-        logger.info { "Init EthRegistrationStrategyImpl with irohaCreator=${irohaConsumer.creator}, notaryIrohaAccount=$notaryIrohaAccount" }
+        logger.info { "Init EthRegistrationStrategyImpl with irohaCreator=${irohaConsumer.creator}, relayStorageAccount=$relayStorageAccount" }
     }
 
-    private val CURRENCY_WALLET = "ethereum_wallet"
-
-    private val ethereumAccountRegistrator =
-        IrohaAccountRegistrator(
-            irohaConsumer,
-            notaryIrohaAccount,
-            CURRENCY_WALLET
-        )
-
-    private val deployHelper = DeployHelper(ethRegistrationConfig.ethereum, ethPasswordConfig)
+    private val ethereumAccountRegistrator = SideChainRegistrator(
+        irohaConsumer,
+        relayStorageAccount,
+        ETH_RELAY
+    )
 
     /**
      * Register new notary client
@@ -58,18 +50,20 @@ class EthRegistrationStrategyImpl(
         publicKey: String
     ): Result<String, Exception> {
         // check that client hasn't been registered yet
-        return ethRelayProvider.getRelayByAccountId("$accountName@$domainId")
+        return ethAddressProvider.getAddressByAccountId("$accountName@$domainId")
             .flatMap { assignedRelays ->
                 if (assignedRelays.isPresent)
-                    throw IllegalArgumentException("Client $accountName@$domainId has already been registered with relay: ${assignedRelays.get()}")
+                    throw D3ErrorException.warning(
+                        failedOperation = REGISTRATION_OPERATION,
+                        description = "Client $accountName@$domainId has already been registered with relay: ${assignedRelays.get()}"
+                    )
                 ethFreeRelayProvider.getRelay()
             }.flatMap { freeEthWallet ->
                 // register with relay in Iroha
                 ethereumAccountRegistrator.register(
                     freeEthWallet,
-                    accountName,
-                    domainId,
-                    publicKey
+                    "$accountName@$domainId",
+                    System.currentTimeMillis()
                 ) { "$accountName@$domainId" }
             }
     }
@@ -78,10 +72,7 @@ class EthRegistrationStrategyImpl(
      * Return number of free relays.
      */
     override fun getFreeAddressNumber(): Result<Int, Exception> {
-        return ethFreeRelayProvider.getRelays()
-            .map { freeRelays ->
-                freeRelays.size
-            }
+        return ethFreeRelayProvider.getRelaysCount()
     }
 
     /**

@@ -5,17 +5,17 @@
 
 package com.d3.eth.vacuum
 
-import com.d3.commons.config.EthereumPasswords
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
-import com.d3.eth.provider.EthRelayProviderIrohaImpl
+import com.d3.eth.provider.ETH_RELAY
+import com.d3.eth.provider.EthAddressProviderIrohaImpl
 import com.d3.eth.provider.EthTokensProviderImpl
 import com.d3.eth.sidechain.util.DeployHelper
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.flatMap
 import com.github.kittinunf.result.map
 import contract.Relay
+import integration.eth.config.EthereumPasswords
 import mu.KLogging
-import org.web3j.tx.gas.StaticGasProvider
 
 /**
  * Class is responsible for relay contracts vacuum
@@ -39,24 +39,20 @@ class RelayVacuum(
         relayVacuumConfig.irohaAnchoredTokenSetterAccount
     )
 
-    private val ethRelayProvider = EthRelayProviderIrohaImpl(
+    private val ethRelayProvider = EthAddressProviderIrohaImpl(
         queryHelper,
-        relayVacuumConfig.notaryIrohaAccount,
-        relayVacuumConfig.registrationServiceIrohaAccount
+        relayVacuumConfig.relayStorageAccount,
+        relayVacuumConfig.registrationServiceIrohaAccount,
+        ETH_RELAY
     )
 
     /**
      * Returns all non free relays
      */
     private fun getAllRelays(): Result<List<Relay>, Exception> {
-        return ethRelayProvider.getRelays().map { wallets ->
+        return ethRelayProvider.getAddresses().map { wallets ->
             wallets.keys.map { ethPublicKey ->
-                Relay.load(
-                    ethPublicKey,
-                    deployHelper.web3,
-                    deployHelper.credentials,
-                    StaticGasProvider(deployHelper.gasPrice, deployHelper.gasLimit)
-                )
+                deployHelper.loadRelayContract(ethPublicKey)
             }
         }
     }

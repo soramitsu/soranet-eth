@@ -7,11 +7,10 @@
 
 package com.d3.eth.vacuum
 
-import com.d3.commons.config.loadEthPasswords
 import com.d3.commons.config.loadLocalConfigs
 import com.d3.commons.model.IrohaCredential
-import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
+import integration.eth.config.loadEthPasswords
 import com.github.kittinunf.result.*
 import jp.co.soramitsu.iroha.java.IrohaAPI
 import jp.co.soramitsu.iroha.java.Utils
@@ -24,7 +23,7 @@ private val logger = KLogging().logger
  */
 fun main(args: Array<String>) {
     loadLocalConfigs(RELAY_VACUUM_PREFIX, RelayVacuumConfig::class.java, "vacuum.properties")
-        .map { relayVacuumConfig ->
+        .flatMap { relayVacuumConfig ->
             executeVacuum(relayVacuumConfig, args)
         }
         .failure { ex ->
