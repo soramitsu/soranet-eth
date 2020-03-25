@@ -5,9 +5,7 @@
 
 package com.d3.eth.registration
 
-import com.d3.commons.config.EthereumConfig
 import com.d3.commons.config.IrohaConfig
-import com.d3.commons.config.IrohaCredentialConfig
 import com.d3.commons.config.IrohaCredentialRawConfig
 
 /**
@@ -21,14 +19,10 @@ interface EthRegistrationConfig {
     val relayRegistrationIrohaAccount: String
 
     /** Iroha account of relay account register */
-    val notaryIrohaAccount: String
+    val relayStorageAccount: String
 
     val registrationCredential: IrohaCredentialRawConfig
 
     /** Iroha configuration */
     val iroha: IrohaConfig
-
-    val ethRelayRegistryAddress: String
-
-    val ethereum: EthereumConfig
 }

@@ -5,32 +5,44 @@
 
 package integration.helper
 
-import com.d3.commons.config.EthereumPasswords
-import com.d3.commons.config.RMQConfig
+import com.d3.chainadapter.client.RMQConfig
+import com.d3.commons.config.loadConfigs
 import com.d3.commons.config.loadRawLocalConfigs
-import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
+import com.d3.commons.expansion.ExpansionDetails
+import com.d3.commons.expansion.ExpansionUtils
+import com.d3.commons.model.IrohaCredential
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
-import com.d3.commons.util.getRandomString
-import com.d3.commons.util.toHexString
+import com.d3.commons.sidechain.provider.FileBasedLastReadBlockProvider
+import com.d3.commons.util.*
+import com.d3.eth.constants.ETH_MASTER_ADDRESS_KEY
+import com.d3.eth.constants.ETH_RELAY_REGISTRY_KEY
+import com.d3.eth.deposit.ETH_WITHDRAWAL_PROOF_DOMAIN
 import com.d3.eth.deposit.EthDepositConfig
+import com.d3.eth.deposit.WithdrawalProof
 import com.d3.eth.deposit.executeDeposit
-import com.d3.eth.provider.ETH_DOMAIN
-import com.d3.eth.provider.EthFreeRelayProvider
-import com.d3.eth.provider.EthRelayProviderIrohaImpl
-import com.d3.eth.provider.EthTokensProviderImpl
+import com.d3.eth.provider.*
 import com.d3.eth.registration.EthRegistrationConfig
 import com.d3.eth.registration.EthRegistrationStrategyImpl
 import com.d3.eth.registration.executeRegistration
 import com.d3.eth.registration.relay.RelayRegistration
+import com.d3.eth.registration.wallet.ETH_REGISTRATION_KEY
+import com.d3.eth.registration.wallet.createRegistrationProof
 import com.d3.eth.sidechain.EthChainListener
 import com.d3.eth.token.EthTokenInfo
 import com.d3.eth.vacuum.RelayVacuumConfig
 import com.d3.eth.withdrawal.withdrawalservice.WithdrawalServiceConfig
+import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.success
+import integration.eth.config.EthereumPasswords
 import kotlinx.coroutines.runBlocking
 import mu.KLogging
+import org.web3j.crypto.ECKeyPair
+import org.web3j.crypto.Keys
+import org.web3j.crypto.WalletUtils
+import org.web3j.utils.Numeric
+import java.math.BigDecimal
 import java.math.BigInteger
 import java.security.KeyPair
 import java.util.*
@@ -40,8 +52,57 @@ import java.util.*
  * Class lazily creates new master contract in Ethereum and master account in Iroha.
  */
 class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
+    private val gson = GsonInstance.get()
 
-    override val accountHelper by lazy { IrohaAccountHelper(irohaAPI) }
+    val ethTestConfig =
+        loadConfigs("test", TestEthereumConfig::class.java, "/test.properties").get()
+
+    override val accountHelper by lazy { EthereumAccountHelper(irohaAPI) }
+
+    /** Ethereum utils */
+    private val contractTestHelper by lazy { ContractTestHelper() }
+
+    private val tokenProviderIrohaConsumer by lazy {
+        IrohaConsumerImpl(accountHelper.tokenSetterAccount, irohaAPI)
+    }
+
+    val tokensProvider = EthTokensProviderImpl(
+        queryHelper,
+        accountHelper.ethAnchoredTokenStorageAccount.accountId,
+        accountHelper.tokenSetterAccount.accountId,
+        accountHelper.irohaAnchoredTokenStorageAccount.accountId,
+        accountHelper.tokenSetterAccount.accountId
+    )
+
+    /** Iroha consumer to set Ethereum contract addresses in Iroha */
+    private val ethAddressWriterIrohaConsumer by lazy {
+        IrohaConsumerImpl(accountHelper.ethAddressesWriter, irohaAPI)
+    }
+
+    val relayRegistryContract by lazy {
+        val contract = contractTestHelper.relayRegistry
+        ModelUtil.setAccountDetail(
+            ethAddressWriterIrohaConsumer,
+            accountHelper.ethAddressesStorage.accountId,
+            ETH_RELAY_REGISTRY_KEY,
+            contract.contractAddress
+        )
+        logger.info { "relay registry eth wallet ${contract.contractAddress} was deployed" }
+        contract
+    }
+
+    /** New master ETH master contract*/
+    val masterContract by lazy {
+        val contract = contractTestHelper.master
+        ModelUtil.setAccountDetail(
+            ethAddressWriterIrohaConsumer,
+            accountHelper.ethAddressesStorage.accountId,
+            ETH_MASTER_ADDRESS_KEY,
+            contract.contractAddress
+        )
+        logger.info("master eth wallet ${contract.contractAddress} was deployed ")
+        contract
+    }
 
     override val configHelper by lazy {
         EthConfigHelper(
@@ -52,32 +113,15 @@ class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
         )
     }
 
-    val ethRegistrationConfig by lazy { configHelper.createEthRegistrationConfig(testConfig.ethereum) }
-
-    /** Ethereum utils */
-    private val contractTestHelper by lazy { ContractTestHelper() }
+    val ethRegistrationConfig by lazy { configHelper.createEthRegistrationConfig() }
 
     val ethListener = EthChainListener(
         contractTestHelper.deployHelper.web3,
-        BigInteger.valueOf(testConfig.ethereum.confirmationPeriod)
+        BigInteger.valueOf(ethTestConfig.ethereum.confirmationPeriod),
+        BigInteger.ZERO,
+        FileBasedLastReadBlockProvider(configHelper.lastEthereumReadBlockFilePath),
+        false
     )
-
-    private val tokenProviderIrohaConsumer by lazy {
-        IrohaConsumerImpl(accountHelper.tokenSetterAccount, irohaAPI)
-    }
-
-    val relayRegistryContract by lazy {
-        val contract = contractTestHelper.relayRegistry
-        logger.info { "relay registry eth wallet ${contract.contractAddress} was deployed" }
-        contract
-    }
-
-    /** New master ETH master contract*/
-    val masterContract by lazy {
-        val wallet = contractTestHelper.master
-        logger.info("master eth wallet ${wallet.contractAddress} was deployed ")
-        wallet
-    }
 
     /** Provider that is used to store/fetch tokens*/
     val ethTokensProvider by lazy {
@@ -100,17 +144,18 @@ class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
     private val ethFreeRelayProvider by lazy {
         EthFreeRelayProvider(
             registrationQueryHelper,
-            accountHelper.notaryAccount.accountId,
+            accountHelper.ethereumRelayStorageAccount.accountId,
             accountHelper.registrationAccount.accountId
         )
     }
 
     /** Provider of ETH wallets created by registrationAccount*/
     private val ethRelayProvider by lazy {
-        EthRelayProviderIrohaImpl(
+        EthAddressProviderIrohaImpl(
             registrationQueryHelper,
-            accountHelper.notaryAccount.accountId,
-            accountHelper.registrationAccount.accountId
+            accountHelper.ethereumRelayStorageAccount.accountId,
+            accountHelper.registrationAccount.accountId,
+            ETH_RELAY
         )
     }
 
@@ -118,10 +163,8 @@ class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
         EthRegistrationStrategyImpl(
             ethFreeRelayProvider,
             ethRelayProvider,
-            ethRegistrationConfig,
-            configHelper.ethPasswordConfig,
             registrationConsumer,
-            accountHelper.notaryAccount.accountId
+            accountHelper.ethereumRelayStorageAccount.accountId
         )
     }
 
@@ -129,6 +172,8 @@ class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
         RelayRegistration(
             ethFreeRelayProvider,
             configHelper.createRelayRegistrationConfig(),
+            masterContract.contractAddress,
+            relayRegistryContract.contractAddress,
             accountHelper.registrationAccount,
             irohaAPI,
             configHelper.ethPasswordConfig
@@ -146,7 +191,7 @@ class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
      * Get relay address of an account.
      */
     fun getRelayByAccount(clientId: String): Optional<String> {
-        return ethRelayProvider.getRelayByAccountId(clientId).get()
+        return ethRelayProvider.getAddressByAccountId(clientId).get()
     }
 
     /**
@@ -313,7 +358,7 @@ class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
         name: String,
         keypair: KeyPair = ModelUtil.generateKeypair()
     ): String {
-        ethRegistrationStrategy.register(name, CLIENT_DOMAIN,  keypair.public.toHexString())
+        ethRegistrationStrategy.register(name, D3_DOMAIN, keypair.public.toHexString())
             .fold({ registeredEthWallet ->
                 logger.info("registered client $name with relay $registeredEthWallet")
                 return registeredEthWallet
@@ -326,7 +371,7 @@ class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
      */
     fun waitOneEtherBlock() {
         runBlocking {
-            logger.info { "Waiting for Ethereum block. Last block ${ethListener.lastBlock}" }
+            logger.info { "Waiting for Ethereum block. Last block ${ethListener.lastBlockNumber}" }
             val block = ethListener.getBlock()
             logger.info { "Waiting for Ethereum block ${block.block.number} is over." }
         }
@@ -343,7 +388,7 @@ class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
     /**
      * Returns wallets registered by master account in Iroha
      */
-    fun getRegisteredEthWallets(): Set<String> = ethRelayProvider.getRelays().get().keys
+    fun getRegisteredEthWallets(): Set<String> = ethRelayProvider.getAddresses().get().keys
 
     /**
      * Add list of [relays].
@@ -373,26 +418,66 @@ class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
         port: Int
     ): khttp.responses.Response {
         return khttp.post(
-            "http://127.0.0.1:${port}/users",
+            "http://127.0.0.1:$port/users",
             data = mapOf(
                 "name" to name,
-                "pubkey" to pubkey
+                "pubkey" to pubkey,
+                "domain" to D3_DOMAIN
             )
         )
     }
+
+    /**
+     * Send transaction from client to trigger Ethereum registration.
+     * The transaction contains ethereum address proof from client.
+     * @param clientId - Iroha client id
+     * @param irohaKeyPair - iroha client keypair
+     * @param ethereumKeyPair - ethereum client keypair
+     * @return result of tx sent with hash
+     */
+    fun registerEthereumWallet(
+        clientId: String,
+        irohaKeyPair: KeyPair,
+        ethereumKeyPair: ECKeyPair
+    ): Result<String, Exception> {
+        val address = "0x${Keys.getAddress(ethereumKeyPair.publicKey)}"
+        logger.info { "Send request to register wallet ${address} for client ${clientId}" }
+        // register in Ethereum
+        val clientIrohaConsumer = IrohaConsumerImpl(
+            IrohaCredential(clientId, irohaKeyPair),
+            irohaAPI
+        )
+        val signature = createRegistrationProof(ethereumKeyPair)
+        return setAccountDetail(
+            clientIrohaConsumer,
+            accountHelper.registrationAccount.accountId,
+            ETH_REGISTRATION_KEY,
+            signature.toJson().irohaEscape(),
+            quorum = 2
+        )
+    }
+
 
     /**
      * Run Ethereum notary process
      */
     fun runEthDeposit(
         ethereumPasswords: EthereumPasswords = configHelper.ethPasswordConfig,
-        ethDepositConfig: EthDepositConfig = configHelper.createEthDepositConfig()
+        ethDepositConfig: EthDepositConfig = configHelper.createEthDepositConfig(
+            String.getRandomString(9)
+        ),
+        rmqConfig: RMQConfig = loadRawLocalConfigs(
+            "rmq",
+            RMQConfig::class.java, "rmq.properties"
+        ),
+        registrationConfig: EthRegistrationConfig = configHelper.createEthRegistrationConfig()
+
     ) {
         val name = String.getRandomString(9)
         val address = "http://localhost:${ethDepositConfig.refund.port}"
         addNotary(name, address)
 
-        executeDeposit(ethereumPasswords, ethDepositConfig)
+        executeDeposit(ethereumPasswords, ethDepositConfig, rmqConfig, registrationConfig)
 
         logger.info { "Notary $name is started on $address" }
     }
@@ -401,7 +486,7 @@ class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
      * Run ethereum registration config
      */
     fun runEthRegistrationService(registrationConfig: EthRegistrationConfig = ethRegistrationConfig) {
-        executeRegistration(registrationConfig, configHelper.ethPasswordConfig)
+        executeRegistration(registrationConfig)
     }
 
     /**
@@ -414,15 +499,144 @@ class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
         relayVacuumConfig: RelayVacuumConfig = configHelper.createRelayVacuumConfig(),
         rmqConfig: RMQConfig = loadRawLocalConfigs(
             "rmq",
-            RMQConfig::class.java,"rmq.properties"
+            RMQConfig::class.java, "rmq.properties"
         )
     ) {
+        masterContract // initialize lazy master contract
         com.d3.eth.withdrawal.withdrawalservice.executeWithdrawal(
             withdrawalServiceConfig,
             configHelper.ethPasswordConfig,
             relayVacuumConfig,
             rmqConfig
         )
+    }
+
+    /**
+     * Get list of all notary endpoints
+     */
+    fun getNotaries(): Map<String, String> {
+        return getAccountDetails(
+            accountHelper.notaryListStorageAccount.accountId,
+            accountHelper.notaryListSetterAccount.accountId
+        )
+    }
+
+    /**
+     * Trigger Ethereum node expansion.
+     * @param accountId - account to expand
+     * @param publicKey - new public key to add
+     * @param quorum - new quorum
+     * @param ethereumAddress - Ethereum address of new node for contract checks
+     */
+    fun triggerExpansion(
+        accountId: String,
+        publicKey: String,
+        quorum: Int,
+        ethereumAddress: String,
+        notaryName: String,
+        notaryEndpointAddress: String
+    ) {
+        logger.info {
+            "Send expansion transaction publicKey=${publicKey} " +
+                    "eth_address=${ethereumAddress}, " +
+                    "notary_endpoint=${notaryEndpointAddress}"
+        }
+        val expansionDetails = ExpansionDetails(
+            accountId,
+            publicKey,
+            quorum,
+            mapOf(
+                "eth_address" to ethereumAddress,
+                "notary_name" to notaryName,
+                "notary_endpoint" to notaryEndpointAddress
+            )
+        )
+
+        IrohaConsumerImpl(
+            accountHelper.superuserAccount,
+            irohaAPI
+        ).send(
+            ExpansionUtils.createExpansionTriggerTx(
+                accountHelper.superuserAccount.accountId,
+                expansionDetails,
+                accountHelper.expansionTriggerAccount.accountId
+            )
+        ).fold(
+            { hash ->
+                logger.info { "Expansion trigger transaction with hash $hash sent" }
+            },
+            { ex -> throw ex }
+        )
+    }
+
+    /**
+     * Withdraw to wallet by provided proofs
+     * @param txHash - hash of iroha initial tx
+     */
+    fun withdrawToWallet(
+        txHash: String
+    ) {
+        val tx = queryHelper.getSingleTransaction(txHash).get()
+            .payload.reducedPayload.commandsList
+            .filter { it.hasTransferAsset() }
+            .first { WalletUtils.isValidAddress(it.transferAsset.description) }
+            .transferAsset
+        val assetId = tx.assetId
+        val amount = tx.amount
+        val beneficiary = tx.description
+
+        val ethTokenAddress = tokensProvider.getTokenAddress(assetId).get()
+        val tokenPrecision = tokensProvider.getTokenPrecision(assetId).get()
+        val decimalAmount = BigDecimal(amount).scaleByPowerOfTen(tokenPrecision).toBigInteger()
+
+        // signatures
+        val vv = ArrayList<BigInteger>()
+        val rr = ArrayList<ByteArray>()
+        val ss = ArrayList<ByteArray>()
+
+        val proofAccountId = "${txHash.take(32).toLowerCase()}@$ETH_WITHDRAWAL_PROOF_DOMAIN"
+        queryHelper.getAccountDetails(proofAccountId, accountHelper.withdrawalAccount.accountId).get()
+            .map { (ethNotaryAddress, withdrawalProofJson) ->
+                val withdrawalProof =
+                    gson.fromJson(withdrawalProofJson.irohaUnEscape(), WithdrawalProof::class.java)
+                vv.add(BigInteger(withdrawalProof.signature.v, 16))
+                rr.add(Numeric.hexStringToByteArray(withdrawalProof.signature.r))
+                ss.add(Numeric.hexStringToByteArray(withdrawalProof.signature.s))
+            }
+
+        if (vv.size == 0) {
+            throw Exception("No proofs for withdrawal")
+        }
+        val transactionResponse =
+            if (tokensProvider.isIrohaAnchored(assetId).get())
+                contractTestHelper.master.mintTokensByPeers(
+                    ethTokenAddress,
+                    decimalAmount,
+                    beneficiary,
+                    Numeric.hexStringToByteArray(txHash),
+                    vv,
+                    rr,
+                    ss,
+                    beneficiary
+                ).send()
+            else
+                contractTestHelper.master.withdraw(
+                    ethTokenAddress,
+                    decimalAmount,
+                    beneficiary,
+                    Numeric.hexStringToByteArray(txHash),
+                    vv,
+                    rr,
+                    ss,
+                    beneficiary
+                ).send()
+
+        val ethTransaction = contractTestHelper.deployHelper.web3
+            .ethGetTransactionByHash(transactionResponse.transactionHash).send()
+        logger.info { "Gas used: ${ethTransaction.transaction.get().gas}" }
+        logger.info { "Gas price: ${ethTransaction.transaction.get().gasPrice}" }
+        logger.info { "Tx input hash: ${txHash}" }
+        logger.info { "Tx Input: ${ethTransaction.transaction.get().input}" }
     }
 
     /**

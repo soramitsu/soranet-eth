@@ -5,10 +5,10 @@
 
 package com.d3.eth.deposit
 
-import com.d3.commons.config.EthereumConfig
 import com.d3.commons.config.IrohaConfig
-import com.d3.commons.config.IrohaCredentialConfig
 import com.d3.commons.config.IrohaCredentialRawConfig
+import integration.eth.config.EthereumConfig
+import java.math.BigInteger
 
 /** Configuration of refund endpoint in Notary */
 interface RefundConfig {
@@ -17,8 +17,8 @@ interface RefundConfig {
 
 /** Configuration of deposit */
 interface EthDepositConfig {
-    /** Iroha account that has registered wallets */
-    val registrationServiceIrohaAccount: String
+    /** Account that stores list of notaries endpoints */
+    val notaryListStorageAccount: String
 
     /** Iroha account that stores Ethereum anchored ERC20 tokens */
     val ethAnchoredTokenStorageAccount: String
@@ -32,14 +32,47 @@ interface EthDepositConfig {
     /** Iroha account that sets Iroha anchored ERC20 tokens */
     val irohaAnchoredTokenSetterAccount: String
 
+    /** multisig notary credentials */
     val notaryCredential: IrohaCredentialRawConfig
+
+    /** non-multisig withdrawal proof creator */
+    val withdrawalCredential: IrohaCredentialRawConfig
 
     val refund: RefundConfig
 
     val iroha: IrohaConfig
 
+    /** Path to storage of last read Ethereum block number */
+    val lastEthereumReadBlockFilePath: String
+
+    /** Ethereum block number to start listen for */
+    val startEthereumBlock: BigInteger
+
+    /** Property indicating if the service should care about last block on start */
+    val ignoreStartBlock: Boolean
+
     val ethereum: EthereumConfig
 
-    /** Iroha withdrawal account grant permission to */
-    val withdrawalAccountId: String
+    /** Account that trigger expansion */
+    val expansionTriggerAccount: String
+
+    /** Creator of expansion trigger transaction */
+    val expansionTriggerCreatorAccountId: String
+
+    val ethIrohaDepositQueue: String
+
+    /** Address of master smart contract in Ethereum */
+    val ethMasterAddress: String
+
+    /** Ethereum wallet list storage account id */
+    val ethereumWalletStorageAccount: String
+
+    /** Ethereum wallet list setter account id */
+    val ethereumWalletSetterAccount: String
+
+    /** Ethereum relay list storage account id */
+    val ethereumRelayStorageAccount: String
+
+    /** Ethereum relay list setter account id */
+    val ethereumRelaySetterAccount: String
 }

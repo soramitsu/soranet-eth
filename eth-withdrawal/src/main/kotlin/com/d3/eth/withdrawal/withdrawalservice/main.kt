@@ -7,8 +7,12 @@
 
 package com.d3.eth.withdrawal.withdrawalservice
 
-import com.d3.commons.config.*
+import com.d3.chainadapter.client.RMQConfig
+import com.d3.commons.config.loadLocalConfigs
+import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.model.IrohaCredential
+import integration.eth.config.EthereumPasswords
+import integration.eth.config.loadEthPasswords
 import com.d3.eth.vacuum.RelayVacuumConfig
 import com.github.kittinunf.result.*
 import jp.co.soramitsu.iroha.java.IrohaAPI
@@ -18,13 +22,14 @@ import mu.KLogging
 private val logger = KLogging().logger
 
 private const val RELAY_VACUUM_PREFIX = "relay-vacuum"
+const val WITHDRAWAL_OPERATION = "Ethereum withdrawal"
 
 const val ETH_WITHDRAWAL_SERVICE_NAME = "eth-withdrawal"
 
 /**
  * Main entry point of Withdrawal Service app
  */
-fun main(args: Array<String>) {
+fun main() {
     loadLocalConfigs("withdrawal", WithdrawalServiceConfig::class.java, "withdrawal.properties")
         .fanout { loadEthPasswords("withdrawal", "/eth/ethereum_password.properties") }
         .map { (withdrawalConfig, passwordConfig) ->

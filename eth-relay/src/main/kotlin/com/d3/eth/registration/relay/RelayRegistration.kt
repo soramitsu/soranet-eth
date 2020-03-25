@@ -5,10 +5,11 @@
 
 package com.d3.eth.registration.relay
 
-import com.d3.commons.config.EthereumPasswords
+import com.d3.commons.model.D3ErrorException
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.util.ModelUtil
+import integration.eth.config.EthereumPasswords
 import com.d3.eth.provider.EthFreeRelayProvider
 import com.d3.eth.sidechain.util.DeployHelper
 import com.github.kittinunf.result.Result
@@ -28,12 +29,17 @@ import java.io.File
 class RelayRegistration(
     private val freeRelayProvider: EthFreeRelayProvider,
     private val relayRegistrationConfig: RelayRegistrationConfig,
+    private val ethMasterAddress: String,
+    private val ethRelayImplementationAddress: String,
     relayCredential: IrohaCredential,
     irohaAPI: IrohaAPI,
     relayRegistrationEthereumPasswords: EthereumPasswords
 ) {
     init {
-        logger.info { "Start relay registration (ethMasterWallet = ${relayRegistrationConfig.ethMasterWallet}, ethRelayImplementationAddress = ${relayRegistrationConfig.ethRelayImplementationAddress})" }
+        logger.info {
+            "Start relay registration (ethMasterAddress = $ethMasterAddress, " +
+                    "ethRelayImplementationAddress = $ethRelayImplementationAddress)"
+        }
     }
 
     /** Ethereum endpoint */
@@ -43,7 +49,7 @@ class RelayRegistration(
     /** Iroha endpoint */
     private val irohaConsumer = IrohaConsumerImpl(relayCredential, irohaAPI)
 
-    private val notaryIrohaAccount = relayRegistrationConfig.notaryIrohaAccount
+    private val relayStorageAccount = relayRegistrationConfig.relayStorageAccount
 
     /**
      * Registers relay in Iroha.
@@ -51,7 +57,7 @@ class RelayRegistration(
      * @return Result with string representation of hash or possible failure
      */
     fun registerRelayIroha(relayAddress: String): Result<String, Exception> {
-        return ModelUtil.setAccountDetail(irohaConsumer, notaryIrohaAccount, relayAddress, "free")
+        return ModelUtil.setAccountDetail(irohaConsumer, relayStorageAccount, relayAddress, "free")
     }
 
     /**
@@ -80,9 +86,9 @@ class RelayRegistration(
     fun deploy(
         relaysToDeploy: Int,
         ethRelayImplementationAddress: String,
-        ethMasterWallet: String
+        ethMasterAddress: String
     ): Result<Unit, Exception> {
-        return checkContracts(ethRelayImplementationAddress, ethMasterWallet)
+        return checkContracts(ethRelayImplementationAddress, ethMasterAddress)
             .map {
                 if (relaysToDeploy > 0)
                     logger.info { "Deploy $relaysToDeploy ethereum relays" }
@@ -91,7 +97,7 @@ class RelayRegistration(
                     val relayWallet =
                         deployHelper.deployUpgradableRelaySmartContract(
                             ethRelayImplementationAddress,
-                            ethMasterWallet
+                            ethMasterAddress
                         )
                             .contractAddress
                     registerRelayIroha(relayWallet).fold(
@@ -112,15 +118,21 @@ class RelayRegistration(
             while (true) {
                 logger.info { "Relay replenishment triggered" }
 
-                freeRelayProvider.getRelays().flatMap { relays ->
-                    logger.info { "Free relays: ${relays.size}" }
-                    val toDeploy = relayRegistrationConfig.number - relays.size
+                freeRelayProvider.getRelaysCount().flatMap { relaysCount ->
+                    logger.info { "Free relays: $relaysCount" }
+                    val toDeploy = relayRegistrationConfig.number - relaysCount
                     deploy(
                         toDeploy,
-                        relayRegistrationConfig.ethRelayImplementationAddress,
-                        relayRegistrationConfig.ethMasterWallet
+                        ethRelayImplementationAddress,
+                        ethMasterAddress
                     )
-                }.failure { throw it }
+                }.failure {
+                    throw D3ErrorException.warning(
+                        failedOperation = RELAY_REGISTRATION_OPERATION,
+                        description = "Cannot get relays",
+                        errorCause = it
+                    )
+                }
 
                 runBlocking { delay(relayRegistrationConfig.replenishmentPeriod * 1000) }
             }

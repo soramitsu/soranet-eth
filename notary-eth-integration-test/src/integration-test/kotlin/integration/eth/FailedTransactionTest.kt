@@ -5,12 +5,12 @@
 
 package integration.eth
 
-import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
 import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.util.getRandomString
 import com.d3.commons.util.toHexString
 import com.d3.eth.provider.ETH_DOMAIN
 import com.d3.eth.token.EthTokenInfo
+import integration.helper.D3_DOMAIN
 import integration.helper.EthIntegrationHelperUtil
 import integration.helper.IrohaConfigHelper
 import integration.registration.RegistrationServiceTestEnvironment
@@ -35,9 +35,12 @@ class FailedTransactionTest {
 
     private val registrationTestEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
     private val ethRegistrationService: Job
+    private val ethDeposit: Job
 
     init {
-        integrationHelper.runEthDeposit()
+        ethDeposit = GlobalScope.launch {
+            integrationHelper.runEthDeposit(ethDepositConfig = integrationHelper.configHelper.createEthDepositConfig())
+        }
         registrationTestEnvironment.registrationInitialization.init()
         ethRegistrationService = GlobalScope.launch {
             integrationHelper.runEthRegistrationService(integrationHelper.ethRegistrationConfig)
@@ -46,6 +49,7 @@ class FailedTransactionTest {
 
     @AfterAll
     fun dropDown() {
+        ethDeposit.cancel()
         ethRegistrationService.cancel()
         integrationHelper.close()
     }
@@ -77,7 +81,7 @@ class FailedTransactionTest {
             assertEquals(BigInteger.ZERO, integrationHelper.getEthBalance(failerAddress))
             val irohaBalance =
                 integrationHelper.getIrohaAccountBalance(
-                    "$clientAccount@$CLIENT_DOMAIN",
+                    "$clientAccount@$D3_DOMAIN",
                     "ether#ethereum"
                 )
             assertEquals(BigDecimal.ZERO, BigDecimal(irohaBalance))
@@ -131,7 +135,7 @@ class FailedTransactionTest {
             // but let's leave it for a rainy day
             val irohaBalance =
                 integrationHelper.getIrohaAccountBalance(
-                    "$clientAccount@$CLIENT_DOMAIN",
+                    "$clientAccount@$D3_DOMAIN",
                     "$coinName#ethereum"
                 )
             assertEquals(BigDecimal.ZERO, BigDecimal(irohaBalance))

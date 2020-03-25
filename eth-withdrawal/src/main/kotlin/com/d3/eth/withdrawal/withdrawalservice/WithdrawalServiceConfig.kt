@@ -5,10 +5,9 @@
 
 package com.d3.eth.withdrawal.withdrawalservice
 
-import com.d3.commons.config.EthereumConfig
 import com.d3.commons.config.IrohaConfig
-import com.d3.commons.config.IrohaCredentialConfig
 import com.d3.commons.config.IrohaCredentialRawConfig
+import integration.eth.config.EthereumConfig
 
 /** Configuration of withdrawal service */
 interface WithdrawalServiceConfig {
@@ -16,7 +15,7 @@ interface WithdrawalServiceConfig {
     val port: Int
 
     /** Notary account in Iroha */
-    val notaryIrohaAccount: String
+    val relayStorageAccount: String
 
     /** Iroha account that stores Ethereum anchored ERC20 tokens */
     val ethAnchoredTokenStorageAccount: String
@@ -38,6 +37,18 @@ interface WithdrawalServiceConfig {
 
     /** Notary account in Iroha */
     val registrationIrohaAccount: String
+
+    /** Account that trigger expansion */
+    val expansionTriggerAccount: String
+
+    /** Creator of expansion trigger transaction */
+    val expansionTriggerCreatorAccountId: String
+
+    /** Account id of withdrawal billing */
+    val withdrawalBillingAccount: String
+
+    /** Master contact Ethereum address */
+    val ethMasterAddress: String
 
     val withdrawalCredential: IrohaCredentialRawConfig
 

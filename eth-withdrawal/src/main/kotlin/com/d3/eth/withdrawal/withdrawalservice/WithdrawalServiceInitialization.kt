@@ -5,14 +5,20 @@
 
 package com.d3.eth.withdrawal.withdrawalservice
 
-import com.d3.commons.config.EthereumPasswords
-import com.d3.commons.config.RMQConfig
+import com.d3.chainadapter.client.RMQConfig
+import com.d3.chainadapter.client.ReliableIrohaChainListener
+import com.d3.commons.expansion.ServiceExpansion
+import com.d3.commons.model.D3ErrorException
 import com.d3.commons.model.IrohaCredential
+import com.d3.commons.provider.NotaryPeerListProviderImpl
 import com.d3.commons.sidechain.SideChainEvent
+import com.d3.commons.sidechain.iroha.FEE_DESCRIPTION
 import com.d3.commons.sidechain.iroha.IrohaChainHandler
-import com.d3.commons.sidechain.iroha.ReliableIrohaChainListener
+import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
 import com.d3.commons.util.createPrettyFixThreadPool
 import com.d3.commons.util.createPrettySingleThreadPool
+import integration.eth.config.EthereumPasswords
+import com.d3.eth.provider.EthTokensProviderImpl
 import com.d3.eth.vacuum.RelayVacuumConfig
 import com.d3.eth.withdrawal.consumer.EthConsumer
 import com.github.kittinunf.result.Result
@@ -23,7 +29,10 @@ import io.reactivex.Observable
 import io.reactivex.schedulers.Schedulers
 import jp.co.soramitsu.iroha.java.IrohaAPI
 import mu.KLogging
-import java.lang.RuntimeException
+import kotlin.system.exitProcess
+
+// TODO restore these parameters in configs
+const val master_address_env = "WITHDRAWAL_ETHMASTERWALLET"
 
 /**
  * @param withdrawalConfig - configuration for withdrawal service
@@ -34,8 +43,8 @@ class WithdrawalServiceInitialization(
     private val credential: IrohaCredential,
     private val irohaAPI: IrohaAPI,
     private val withdrawalEthereumPasswords: EthereumPasswords,
-    private val relayVacuumConfig: RelayVacuumConfig,
-    private val rmqConfig: RMQConfig
+    relayVacuumConfig: RelayVacuumConfig,
+    rmqConfig: RMQConfig
 ) {
 
     private val chainListener = ReliableIrohaChainListener(
@@ -44,36 +53,87 @@ class WithdrawalServiceInitialization(
         createPrettySingleThreadPool(ETH_WITHDRAWAL_SERVICE_NAME, "rmq-consumer")
     )
 
+    private val queryHelper by lazy {
+        IrohaQueryHelperImpl(
+            irohaAPI,
+            credential.accountId,
+            credential.keyPair
+        )
+    }
+
+    private val tokensProvider = EthTokensProviderImpl(
+        queryHelper,
+        withdrawalConfig.ethAnchoredTokenStorageAccount,
+        withdrawalConfig.ethAnchoredTokenSetterAccount,
+        withdrawalConfig.irohaAnchoredTokenStorageAccount,
+        withdrawalConfig.irohaAnchoredTokenSetterAccount
+    )
+
+    private val notaryPeerListProvider = NotaryPeerListProviderImpl(
+        queryHelper,
+        withdrawalConfig.notaryListStorageAccount,
+        withdrawalConfig.notaryListSetterAccount
+    )
+
+    val ethConsumer = EthConsumer(
+        withdrawalConfig.ethereum,
+        withdrawalEthereumPasswords,
+        relayVacuumConfig
+    )
+
+    private val expansionService = ServiceExpansion(
+        withdrawalConfig.expansionTriggerAccount,
+        withdrawalConfig.expansionTriggerCreatorAccountId,
+        irohaAPI
+    )
+
+    private val proofCollector =
+        ProofCollector(queryHelper, withdrawalConfig, tokensProvider, notaryPeerListProvider)
+
     /**
      * Init Iroha chain listener
      * @return Observable on Iroha sidechain events
      */
     private fun initIrohaChain(): Result<Observable<SideChainEvent.IrohaEvent>, Exception> {
         logger.info { "Init Iroha chain listener" }
-        return chainListener.getBlockObservable()
-            .map { observable ->
-                observable.flatMapIterable { (block, _) -> IrohaChainHandler().parseBlock(block) }
+        return chainListener.getBlockObservable().map { observable ->
+            observable.flatMapIterable { (block, _) ->
+                EthereumWithdrawalExpansionStrategy(
+                    withdrawalConfig.ethereum,
+                    withdrawalEthereumPasswords,
+                    withdrawalConfig.ethMasterAddress,
+                    expansionService,
+                    proofCollector
+                ).filterAndExpand(block)
+                IrohaChainHandler(
+                    credential.accountId,
+                    FEE_DESCRIPTION
+                ).parseBlock(block)
             }
+        }
     }
 
     /**
      * Init Withdrawal Service
      */
     private fun initWithdrawalService(inputEvents: Observable<SideChainEvent.IrohaEvent>): WithdrawalService {
-        return WithdrawalServiceImpl(withdrawalConfig, credential, irohaAPI, inputEvents)
+        return WithdrawalServiceImpl(
+            withdrawalConfig,
+            credential,
+            irohaAPI,
+            queryHelper,
+            inputEvents,
+            tokensProvider,
+            proofCollector
+        )
     }
 
     private fun initEthConsumer(withdrawalService: WithdrawalService): Result<Unit, Exception> {
         logger.info { "Init Ether withdrawal consumer" }
 
         return Result.of {
-            val ethConsumer = EthConsumer(
-                withdrawalConfig.ethereum,
-                withdrawalEthereumPasswords,
-                relayVacuumConfig
-            )
             withdrawalService.output()
-                .subscribeOn(
+                .observeOn(
                     Schedulers.from(
                         createPrettyFixThreadPool(
                             ETH_WITHDRAWAL_SERVICE_NAME,
@@ -84,16 +144,28 @@ class WithdrawalServiceInitialization(
                 .subscribe(
                     { res ->
                         res.map { withdrawalEvents ->
-                            withdrawalEvents.map { event ->
+                            withdrawalEvents.forEach { event ->
                                 try {
                                     val transactionReceipt = ethConsumer.consume(event)
-                                    // TODO: Add subtraction of assets from master account in Iroha in 'else'
                                     if (transactionReceipt == null || transactionReceipt.status == FAILED_STATUS) {
-                                        throw RuntimeException("Ethereum transaction has failed")
+                                        throw D3ErrorException.fatal(
+                                            WITHDRAWAL_OPERATION,
+                                            "Ethereum transaction has failed"
+                                        )
+                                    } else {
+                                        withdrawalService.finalizeWithdrawal(event)
+                                            .failure { ex ->
+                                                throw D3ErrorException.fatal(
+                                                    WITHDRAWAL_OPERATION,
+                                                    "Cannot finalize withdrawal"
+                                                )
+                                            }
                                     }
                                 } catch (e: Exception) {
-                                    withdrawalService.returnIrohaAssets(event)
-                                    throw e;
+                                    logger.error("Withdrawal error, perform rollback", e)
+                                    withdrawalService.returnIrohaAssets(event).failure {
+                                        logger.error("Rollback error", it)
+                                    }
                                 }
                             }
                         }.failure { ex ->
@@ -102,7 +174,7 @@ class WithdrawalServiceInitialization(
                         //TODO call ack()
                     }, { ex ->
                         logger.error("Withdrawal observable error", ex)
-                        System.exit(1)
+                        exitProcess(1)
                     }
                 )
             Unit

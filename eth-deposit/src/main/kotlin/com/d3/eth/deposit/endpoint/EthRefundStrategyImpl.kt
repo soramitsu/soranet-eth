@@ -5,26 +5,28 @@
 
 package com.d3.eth.deposit.endpoint
 
-import com.d3.commons.config.EthereumConfig
-import com.d3.commons.config.EthereumPasswords
+import com.d3.commons.model.D3ErrorException
 import com.d3.commons.model.IrohaCredential
+import com.d3.commons.sidechain.iroha.FEE_DESCRIPTION
+import com.d3.commons.sidechain.iroha.util.getWithdrawalCommands
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
+import com.d3.commons.sidechain.iroha.util.isWithdrawalTransaction
 import com.d3.eth.deposit.EthDepositConfig
-import com.d3.eth.provider.EthRelayProviderIrohaImpl
+import com.d3.eth.deposit.REFUND_OPERATION
+import com.d3.eth.provider.ETH_RELAY
+import com.d3.eth.provider.EthAddressProviderIrohaImpl
 import com.d3.eth.provider.EthTokensProvider
 import com.d3.eth.sidechain.util.DeployHelper
 import com.d3.eth.sidechain.util.hashToWithdraw
-import com.d3.eth.sidechain.util.signUserData
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.fanout
 import com.github.kittinunf.result.flatMap
+import integration.eth.config.EthereumConfig
+import integration.eth.config.EthereumPasswords
 import iroha.protocol.TransactionOuterClass.Transaction
 import jp.co.soramitsu.iroha.java.IrohaAPI
 import mu.KLogging
-import org.web3j.crypto.ECKeyPair
 import java.math.BigDecimal
-
-class NotaryException(reason: String) : Exception(reason)
 
 /**
  * Class performs effective implementation of refund strategy for Ethereum
@@ -32,21 +34,23 @@ class NotaryException(reason: String) : Exception(reason)
 class EthRefundStrategyImpl(
     depositConfig: EthDepositConfig,
     irohaAPI: IrohaAPI,
-    private val credential: IrohaCredential,
+    credential: IrohaCredential,
     ethereumConfig: EthereumConfig,
     ethereumPasswords: EthereumPasswords,
     private val tokensProvider: EthTokensProvider
 ) : EthRefundStrategy {
     private val queryHelper =
         IrohaQueryHelperImpl(irohaAPI, credential.accountId, credential.keyPair)
-    private val relayProvider = EthRelayProviderIrohaImpl(
+    private val relayProvider = EthAddressProviderIrohaImpl(
         queryHelper,
-        credential.accountId,
-        depositConfig.registrationServiceIrohaAccount
+        depositConfig.ethereumRelayStorageAccount,
+        depositConfig.ethereumRelaySetterAccount,
+        ETH_RELAY
     )
 
-    private var ecKeyPair: ECKeyPair =
-        DeployHelper(ethereumConfig, ethereumPasswords).credentials.ecKeyPair
+    private val withdrawalAccountId = depositConfig.notaryCredential.accountId
+
+    private val deployHelper = DeployHelper(ethereumConfig, ethereumPasswords)
 
     override fun performRefund(request: EthRefundRequest): EthNotaryResponse {
         logger.info("Check tx ${request.irohaTx} for refund")
@@ -72,54 +76,24 @@ class EthRefundStrategyImpl(
         request: EthRefundRequest
     ): Result<EthRefund, Exception> {
         return Result.of {
-            val commands = appearedTx.payload.reducedPayload.getCommands(0)
-
             when {
-                // rollback case
-                appearedTx.payload.reducedPayload.commandsCount == 1 &&
-                        commands.hasSetAccountDetail() -> {
-
-                    // TODO a.chernyshov replace with effective implementation
-                    // 1. Get eth transaction hash from setAccountDetail
-                    // 2. Check eth transaction and get info from it
-                    //    There should be a batch with 3 txs
-                    //      if 3 tx in the batch - reject rollback
-                    //      if 2 tx (transfer asset is absent) - approve rollback
-                    // 3. build EthRefund
-
-                    val key = commands.setAccountDetail.key
-                    val value = commands.setAccountDetail.value
-                    val destEthAddress = ""
-                    logger.info { "Rollback case ($key, $value)" }
-
-                    val relayAddress = relayProvider.getRelays().get().filter {
-                        it.value == commands.transferAsset.srcAccountId
-                    }.keys.first()
-
-                    EthRefund(
-                        destEthAddress,
-                        "mockCoinType",
-                        "10",
-                        request.irohaTx,
-                        relayAddress
-                    )
-                }
                 // withdrawal case
-                (appearedTx.payload.reducedPayload.commandsCount == 1) &&
-                        commands.hasTransferAsset() -> {
-                    val destAccount = commands.transferAsset.destAccountId
-                    // TODO: Bulat change destAccount to withdrawalTrigger account
-                    if (destAccount != credential.accountId)
-                        throw NotaryException("Refund - check transaction. Destination account is wrong '$destAccount'")
-
-                    val amount = commands.transferAsset.amount
-                    val assetId = commands.transferAsset.assetId
-                    val destEthAddress = commands.transferAsset.description
+                isWithdrawalTransaction(
+                    appearedTx,
+                    withdrawalAccountId
+                ) -> {
+                    // pick withdrawal transfers
+                    val withdrawalCommand = getWithdrawalCommands(appearedTx, withdrawalAccountId)
+                        .map { cmd -> cmd.transferAsset }
+                        .first { cmd -> cmd.description != FEE_DESCRIPTION }
+                    val amount = withdrawalCommand.amount
+                    val assetId = withdrawalCommand.assetId
+                    val destEthAddress = withdrawalCommand.description
 
                     val tokenInfo = tokensProvider.getTokenAddress(assetId)
                         .fanout { tokensProvider.getTokenPrecision(assetId) }
 
-                    relayProvider.getRelayByAccountId(commands.transferAsset.srcAccountId)
+                    relayProvider.getAddressByAccountId(withdrawalCommand.srcAccountId)
                         .fanout {
                             tokenInfo
                         }.fold(
@@ -132,16 +106,28 @@ class EthRefundStrategyImpl(
                                     tokenInfo.first,
                                     decimalAmount,
                                     request.irohaTx,
-                                    relayAddress.orElseThrow { Exception("Relay addres  not found for user ${commands.transferAsset.srcAccountId}") }
+                                    relayAddress.orElseThrow {
+                                        D3ErrorException.fatal(
+                                            failedOperation = REFUND_OPERATION,
+                                            description = "Relay address not found for user ${withdrawalCommand.srcAccountId}"
+                                        )
+                                    }
                                 )
                             },
-                            { throw it }
+                            {
+                                throw D3ErrorException.fatal(
+                                    failedOperation = REFUND_OPERATION,
+                                    description = "Cannot get relay by account id ${withdrawalCommand.srcAccountId}",
+                                    errorCause = it
+                                )
+                            }
                         )
                 }
                 else -> {
-                    val errorMsg = "Transaction doesn't contain expected commands."
-                    logger.error { errorMsg }
-                    throw NotaryException(errorMsg)
+                    throw D3ErrorException.warning(
+                        failedOperation = REFUND_OPERATION,
+                        description = "Transaction doesn't contain expected commands"
+                    )
                 }
             }
         }
@@ -164,8 +150,8 @@ class EthRefundStrategyImpl(
                     ethRefund.relayAddress
                 )
 
-            val signature = signUserData(ecKeyPair, finalHash)
-            EthNotaryResponse.Successful(signature, ethRefund)
+            val signature = deployHelper.signUserData(finalHash)
+            EthNotaryResponse.Successful(signature)
         }
     }
 

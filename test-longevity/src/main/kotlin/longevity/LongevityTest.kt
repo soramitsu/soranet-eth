@@ -5,16 +5,14 @@
 
 package longevity
 
-import com.d3.commons.config.IrohaCredentialConfig
 import com.d3.commons.config.IrohaCredentialRawConfig
-import com.d3.commons.config.loadEthPasswords
 import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.util.hex
 import com.d3.eth.provider.ETH_PRECISION
 import com.github.kittinunf.result.Result
+import integration.eth.config.loadEthPasswords
 import integration.helper.EthIntegrationHelperUtil
 import integration.helper.NotaryClient
-import io.ktor.util.hex
 import jp.co.soramitsu.iroha.java.Utils
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
@@ -42,7 +40,7 @@ class LongevityTest {
     private val clients = (0..totalClients - 1).map { clientNumber ->
         NotaryClient(
             integrationHelper,
-            integrationHelper.configHelper.createEthereumConfig("deploy/ethereum/keys/local/client$clientNumber.key"),
+            integrationHelper.configHelper.createEthereumConfig(),
             loadEthPasswords("client$clientNumber", "/eth/ethereum_password.properties").get()
         )
     }
@@ -50,7 +48,7 @@ class LongevityTest {
     /** Run 4 instances of notary */
     private fun runNotaries() {
         // run first instance with default configs
-        integrationHelper.runEthDeposit()
+        integrationHelper.runEthDeposit(ethDepositConfig = integrationHelper.configHelper.createEthDepositConfig())
 
         // launch the rest
         (1..3).forEach {
@@ -61,10 +59,11 @@ class LongevityTest {
                 override val accountId = integrationHelper.accountHelper.notaryAccount.accountId
             }
 
-            val ethereumPasswords = loadEthPasswords("notary$it", "/eth/ethereum_password.properties").get()
+            val ethereumPasswords =
+                loadEthPasswords("notary$it", "/eth/ethereum_password.properties").get()
 
             val ethereumConfig =
-                integrationHelper.configHelper.createEthereumConfig("deploy/ethereum/keys/local/notary$it.key")
+                integrationHelper.configHelper.createEthereumConfig()
 
             val depositConfig =
                 integrationHelper.configHelper.createEthDepositConfig(
@@ -128,7 +127,11 @@ class LongevityTest {
 
                     val ethBalanceBefore = client.getEthBalance()
                     val irohaBalanceBefore = client.getIrohaBalance()
-                    logger.info { "Master eth balance ${integrationHelper.getEthBalance(masterContract)} after deposit" }
+                    logger.info {
+                        "Master eth balance ${integrationHelper.getEthBalance(
+                            masterContract
+                        )} after deposit"
+                    }
                     logger.info { "Clietn ${client.name} eth balance: $ethBalanceBefore after deposit" }
                     logger.info { "Client ${client.name} iroha balance $irohaBalanceBefore after deposit" }
 
@@ -143,7 +146,11 @@ class LongevityTest {
 
                     val ethBalanceAfter = client.getEthBalance()
                     val irohaBalanceAfter = client.getIrohaBalance()
-                    logger.info { "Master eth balance ${integrationHelper.getEthBalance(masterContract)} after withdrawal" }
+                    logger.info {
+                        "Master eth balance ${integrationHelper.getEthBalance(
+                            masterContract
+                        )} after withdrawal"
+                    }
                     logger.info { "Clietn ${client.name} eth balance: $ethBalanceAfter after withdrawal" }
                     logger.info { "Client ${client.name} iroha balance $irohaBalanceAfter after withdrawal" }
 
@@ -154,7 +161,13 @@ class LongevityTest {
                     if (!BigDecimal(irohaBalanceBefore).equals(BigDecimal(amount, ETH_PRECISION)))
                         logger.warn { "Client ${client.name} has wrong iroha balance. Expected 0, but got after: $irohaBalanceBefore" }
 
-                    if (!BigDecimal(irohaBalanceAfter).equals(BigDecimal(BigInteger.ZERO, ETH_PRECISION)))
+                    if (!BigDecimal(irohaBalanceAfter).equals(
+                            BigDecimal(
+                                BigInteger.ZERO,
+                                ETH_PRECISION
+                            )
+                        )
+                    )
                         logger.warn { "Client ${client.name} has wrong iroha balance. Expected 0, but got after: $irohaBalanceAfter" }
                 }
             }

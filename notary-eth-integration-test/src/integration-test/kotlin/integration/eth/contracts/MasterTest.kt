@@ -5,6 +5,7 @@
 
 package integration.eth.contracts
 
+import com.d3.eth.helper.hexStringToByteArray
 import com.d3.eth.sidechain.util.hashToAddAndRemovePeer
 import com.d3.eth.sidechain.util.hashToMint
 import com.d3.eth.sidechain.util.hashToWithdraw
@@ -22,6 +23,7 @@ import org.web3j.protocol.exceptions.TransactionException
 import java.math.BigInteger
 import java.time.Duration
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class MasterTest {
     private lateinit var cth: ContractTestHelper
@@ -43,23 +45,6 @@ class MasterTest {
         accGreen = cth.accGreen
         keypair = cth.keypair
         etherAddress = cth.etherAddress
-    }
-
-    /**
-     * Try to reinitialize master with another relay registry.
-     * @given master contract is deployed and initialized
-     * @when call initialize
-     * @then call failed
-     */
-    @Test
-    fun initializeAgain() {
-        Assertions.assertThrows(TransactionException::class.java) {
-            master.initialize(
-                cth.deployHelper.credentials.address,
-                etherAddress,
-                listOf("0x0000000000000000000000000000000000000000")
-            ).send()
-        }
     }
 
     /**
@@ -478,7 +463,6 @@ class MasterTest {
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
 
             val master = cth.deployHelper.deployMasterSmartContract(
-                cth.relayRegistry.contractAddress,
                 peers
             )
 
@@ -532,7 +516,6 @@ class MasterTest {
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
 
             val master = cth.deployHelper.deployMasterSmartContract(
-                cth.relayRegistry.contractAddress,
                 peers.dropLast(1)
             )
 
@@ -588,7 +571,6 @@ class MasterTest {
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
 
             val master = cth.deployHelper.deployMasterSmartContract(
-                cth.relayRegistry.contractAddress,
                 peers
             )
 
@@ -645,7 +627,6 @@ class MasterTest {
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
 
             val master = cth.deployHelper.deployMasterSmartContract(
-                cth.relayRegistry.contractAddress,
                 peers
             )
 
@@ -692,7 +673,6 @@ class MasterTest {
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
 
             val master = cth.deployHelper.deployMasterSmartContract(
-                cth.relayRegistry.contractAddress,
                 peers
             )
 
@@ -748,7 +728,6 @@ class MasterTest {
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
 
             val master = cth.deployHelper.deployMasterSmartContract(
-                cth.relayRegistry.contractAddress,
                 peers
             )
             cth.sendEthereum(BigInteger.valueOf(5000), master.contractAddress)
@@ -804,7 +783,6 @@ class MasterTest {
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
 
             val master = cth.deployHelper.deployMasterSmartContract(
-                cth.relayRegistry.contractAddress,
                 peers
             )
 
@@ -836,22 +814,7 @@ class MasterTest {
     }
 
     /**
-     * @given relay registry and master contract
-     * @when try to withdraw to address which is not in whitelist
-     * @then should throws exception
-     */
-    @Test
-    fun withdrawToAddressAbsentInWhiteList() {
-        Assertions.assertTimeoutPreemptively(timeoutDuration) {
-            cth.addWhiteListToRelayRegistry(Keys.getAddress(keypair), listOf(accGreen))
-            Assertions.assertThrows(TransactionException::class.java) {
-                cth.withdraw(BigInteger.valueOf(4000), "0x1")   //wrong address
-            }
-        }
-    }
-
-    /**
-     * @given relay registry and master contracts
+     * @given master contracts
      * @when try to add one more peer address by all valid peers
      * @then the new peer should be added
      */
@@ -870,7 +833,6 @@ class MasterTest {
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
 
             val master = cth.deployHelper.deployMasterSmartContract(
-                cth.relayRegistry.contractAddress,
                 peers
             )
 
@@ -894,7 +856,7 @@ class MasterTest {
     }
 
     /**
-     * @given relay registry and master contracts
+     * @given master contracts
      * @when try to add one more peer address by all valid peers and one wrong signature
      * @then the new peer should be added
      */
@@ -913,7 +875,6 @@ class MasterTest {
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
 
             val master = cth.deployHelper.deployMasterSmartContract(
-                cth.relayRegistry.contractAddress,
                 peers
             )
 
@@ -938,7 +899,7 @@ class MasterTest {
     }
 
     /**
-     * @given relay registry and master contracts, peer is added with hash
+     * @given master contracts, peer is added with hash
      * @when try to remove peer address by all valid peers and then add peer by used hash
      * @then the peer should not be added again if tx hash is already used
      */
@@ -957,7 +918,6 @@ class MasterTest {
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
 
             val master = cth.deployHelper.deployMasterSmartContract(
-                cth.relayRegistry.contractAddress,
                 peers
             )
 
@@ -984,7 +944,7 @@ class MasterTest {
                 newPeer,
                 removeIrohaHash
             )
-            val removeByteHash = cth.irohaHashToByteHash(removeIrohaHash)
+            val removeByteHash = hexStringToByteArray(removeIrohaHash)
             val removeSigs =
                 cth.prepareSignatures(realSigCount, keyPairs.subList(0, realSigCount), removeHash)
 
@@ -1019,7 +979,7 @@ class MasterTest {
     }
 
     /**
-     * @given relay registry and master contracts
+     * @given master contracts
      * @when try to add one more peer address by all valid peers
      * @then the tx should be failed and new peer is not saved
      */
@@ -1038,7 +998,6 @@ class MasterTest {
 
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
             val master = cth.deployHelper.deployMasterSmartContract(
-                cth.relayRegistry.contractAddress,
                 peers
             )
 
@@ -1063,7 +1022,7 @@ class MasterTest {
     }
 
     /**
-     * @given relay registry and master contracts
+     * @given master contracts
      * @when try to remove one peer address by rest of peers
      * @then the tx should be successful and peer is removed
      */
@@ -1080,7 +1039,6 @@ class MasterTest {
             val withPeerToRemove = peers.toMutableList()
             withPeerToRemove.add(peerToRemove)
             val master = cth.deployHelper.deployMasterSmartContract(
-                cth.relayRegistry.contractAddress,
                 withPeerToRemove
             )
 
@@ -1132,7 +1090,6 @@ class MasterTest {
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
 
             val master = cth.deployHelper.deployUpgradableMasterSmartContract(
-                cth.relayRegistry.contractAddress,
                 peers
             )
             val xorAddress = master.xorTokenInstance().send()
@@ -1146,8 +1103,6 @@ class MasterTest {
             )
             val sigs =
                 cth.prepareSignatures(realSigCount, keyPairs.subList(0, realSigCount), finalHash)
-
-            cth.addWhiteListToRelayRegistry(cth.relay.contractAddress, listOf(beneficiary))
 
             Assertions.assertTrue(
                 master.mintTokensByPeers(
@@ -1186,7 +1141,6 @@ class MasterTest {
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
 
             val master = cth.deployHelper.deployUpgradableMasterSmartContract(
-                cth.relayRegistry.contractAddress,
                 peers.dropLast(1)
             )
             val xorToken = master.xorTokenInstance().send()
@@ -1200,8 +1154,6 @@ class MasterTest {
             )
             val sigs =
                 cth.prepareSignatures(realSigCount, keyPairs.subList(0, realSigCount), finalHash)
-
-            cth.addWhiteListToRelayRegistry(cth.relay.contractAddress, listOf(beneficiary))
 
             Assertions.assertTrue(
                 master.mintTokensByPeers(
@@ -1234,7 +1186,6 @@ class MasterTest {
             val beneficiary = "0xbcBCeb4D66065B7b34d1B90f4fa572829F2c6D5c"
             val amountToSend: Long = 1000
 
-            cth.addWhiteListToRelayRegistry(cth.relay.contractAddress, listOf(beneficiary))
             val result = cth.mintByPeer(beneficiary, amountToSend).isStatusOK
 
             Assertions.assertTrue(result)
@@ -1265,53 +1216,6 @@ class MasterTest {
                 BigInteger("0"),
                 cth.getToken(master.xorTokenInstance().send()).balanceOf(master.contractAddress).send()
             )
-        }
-    }
-
-    /**
-     * @given master and sora token
-     * @when try to mint
-     * @then should not be minted new tokens
-     */
-    @Test
-    fun mintNewTokens2of4peers() {
-        Assertions.assertTimeoutPreemptively(timeoutDuration) {
-            val sigCount = 4
-            val realSigCount = 2
-
-            val beneficiary = "0xbcBCeb4D66065B7b34d1B90f4fa572829F2c6D5c"
-            val amountToSend = 1000
-
-            val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
-
-            val master = cth.deployHelper.deployUpgradableMasterSmartContract(
-                cth.relayRegistry.contractAddress,
-                peers
-            )
-            val xorAddress = master.xorTokenInstance().send()
-
-            val finalHash = hashToMint(
-                xorAddress,
-                amountToSend.toString(),
-                beneficiary,
-                cth.defaultIrohaHash,
-                cth.relay.contractAddress
-            )
-            val sigs =
-                cth.prepareSignatures(realSigCount, keyPairs.subList(0, realSigCount), finalHash)
-
-            Assertions.assertThrows(TransactionException::class.java) {
-                master.mintTokensByPeers(
-                    xorAddress,
-                    BigInteger.valueOf(amountToSend.toLong()),
-                    beneficiary,
-                    cth.defaultByteHash,
-                    sigs.vv,
-                    sigs.rr,
-                    sigs.ss,
-                    master.contractAddress
-                ).send()
-            }
         }
     }
 }

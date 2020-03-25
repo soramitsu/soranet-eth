@@ -5,21 +5,24 @@
 
 package integration.helper
 
-import com.d3.commons.config.EthereumPasswords
 import com.d3.commons.config.loadConfigs
+import com.d3.eth.helper.hexStringToByteArray
 import com.d3.eth.sidechain.util.*
 import contract.SoraToken
-import integration.TestConfig
+import integration.eth.config.EthereumPasswords
 import org.web3j.crypto.ECKeyPair
 import org.web3j.crypto.Hash
 import org.web3j.crypto.Keys
 import org.web3j.protocol.core.methods.response.TransactionReceipt
-import org.web3j.utils.Numeric
 import java.math.BigInteger
 import kotlin.test.assertEquals
 
+/** Helper class for Ethereum contracts.
+ * Deploys contracts on demand, contains set of functions to work with ethereum contracts.
+ */
 class ContractTestHelper {
-    private val testConfig = loadConfigs("test", TestConfig::class.java, "/test.properties").get()
+    private val testConfig =
+        loadConfigs("test", TestEthereumConfig::class.java, "/test.properties").get()
     private val passwordConfig =
         loadConfigs(
             "test",
@@ -39,7 +42,6 @@ class ContractTestHelper {
     val token by lazy { deployHelper.deployERC20TokenSmartContract() }
     val master by lazy {
         deployHelper.deployUpgradableMasterSmartContract(
-            relayRegistry.contractAddress,
             listOf(accMain)
         )
     }
@@ -54,17 +56,13 @@ class ContractTestHelper {
 
     val etherAddress = "0x0000000000000000000000000000000000000000"
     val defaultIrohaHash = Hash.sha3(String.format("%064x", BigInteger.valueOf(12345)))
-    val defaultByteHash = irohaHashToByteHash(defaultIrohaHash)
-
+    val defaultByteHash = hexStringToByteArray(defaultIrohaHash)
 
     data class sigsData(
         val vv: ArrayList<BigInteger>,
         val rr: ArrayList<ByteArray>,
         val ss: ArrayList<ByteArray>
     )
-
-    fun irohaHashToByteHash(irohaHash: String) =
-        Numeric.hexStringToByteArray(irohaHash.slice(2 until irohaHash.length))
 
     fun prepareSignatures(amount: Int, keypairs: List<ECKeyPair>, toSign: String): sigsData {
         val vv = ArrayList<BigInteger>()
