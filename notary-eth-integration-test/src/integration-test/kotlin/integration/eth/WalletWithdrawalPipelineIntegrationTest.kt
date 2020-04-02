@@ -167,6 +167,8 @@ class WalletWithdrawalPipelineIntegrationTest {
                 masterBalanceActual
             )
 
+            Thread.sleep(15_000)
+
             // check notification published
             val notification = integrationHelper.gson.fromJson(
                 integrationHelper.getLastRmqEvent().toString(),
@@ -239,6 +241,8 @@ class WalletWithdrawalPipelineIntegrationTest {
                 masterBalanceActual
             )
 
+            Thread.sleep(15_000)
+
             // check notification published
             val notification = integrationHelper.gson.fromJson(
                 integrationHelper.getLastRmqEvent().toString(),
@@ -265,7 +269,7 @@ class WalletWithdrawalPipelineIntegrationTest {
         integrationHelper.addIrohaAssetTo(clientId, assetId, amount)
 
         val initialWithdrawalBalance = integrationHelper.getIrohaAccountBalance(withdrawalAccountId, assetId)
-        val initialClietnIrohaBalance = integrationHelper.getIrohaAccountBalance(clientId, assetId)
+        val initialClientIrohaBalance = integrationHelper.getIrohaAccountBalance(clientId, assetId)
         val initialEthereumBalance = integrationHelper.getERC20TokenBalance(tokenAddress, toAddress)
 
         // transfer assets from user to notary master account
@@ -285,7 +289,7 @@ class WalletWithdrawalPipelineIntegrationTest {
 
         // check balance of client in Iroha
         assertEquals(
-            initialClietnIrohaBalance.toDouble() - amount.toDouble(),
+            initialClientIrohaBalance.toDouble() - amount.toDouble(),
             integrationHelper.getIrohaAccountBalance(clientId, assetId).toDouble()
         )
 
@@ -311,6 +315,8 @@ class WalletWithdrawalPipelineIntegrationTest {
             initialWithdrawalBalance.toBigDecimal() + amount.toBigDecimal(),
             integrationHelper.getIrohaAccountBalance(withdrawalAccountId, assetId).toBigDecimal()
         )
+
+        Thread.sleep(15_000)
 
         // check notification published
         val notification = integrationHelper.gson.fromJson(
@@ -402,6 +408,8 @@ class WalletWithdrawalPipelineIntegrationTest {
                 initialWithdrawalBalance.toBigDecimal() + decimalAmount,
                 integrationHelper.getIrohaAccountBalance(withdrawalAccountId, assetId).toBigDecimal()
             )
+
+            Thread.sleep(15_000)
 
             // check notification published
             val notification = integrationHelper.gson.fromJson(

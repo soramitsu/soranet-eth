@@ -240,37 +240,44 @@ class EthChainHandler(
                     block.block.transactions
                         .map { it.get() as Transaction }
                         .flatMap { transaction ->
-                            if (transaction.input != ETH_PREFIX && transaction.to == masterAddres) {
-                                logger.info { "Contract method call of master $masterAddres" }
-                                handleWithdrawal(transaction, time)
-                            } else if (wallets.containsKey(transaction.from) && transaction.to == masterAddres) {
-                                val account = wallets[transaction.from]!!
-                                logger.info { "Deposit from wallet ${transaction.from} ($account) to master $masterAddres" }
-                                handleEther(transaction, time, account)
-                            } else if (relays.containsKey(transaction.to)) {
-                                val account = relays[transaction.to]!!
-                                logger.info { "Deposit to relay ${transaction.to} ($account)" }
-                                handleEther(transaction, time, account)
-                            } else if (ethAnchoredTokens.containsKey(transaction.to)) {
-                                handleErc20(
-                                    transaction,
-                                    time,
-                                    wallets,
-                                    relays,
-                                    ethAnchoredTokens[transaction.to]!!,
-                                    false
-                                )
-                            } else if (irohaAnchoredTokens.containsKey(transaction.to)) {
-                                handleErc20(
-                                    transaction,
-                                    time,
-                                    wallets,
-                                    relays,
-                                    irohaAnchoredTokens[transaction.to]!!,
-                                    true
-                                )
-                            } else
-                                listOf()
+                            when {
+                                // TODO think how to proof withdrawals for other ERC20
+                                transaction.input != ETH_PREFIX && transaction.to == masterAddres -> {
+                                    logger.info { "Contract method call of master $masterAddres" }
+                                    handleWithdrawal(transaction, time)
+                                }
+                                transaction.input == ETH_PREFIX && wallets.containsKey(transaction.from) && transaction.to == masterAddres -> {
+                                    val account = wallets[transaction.from]!!
+                                    logger.info { "Ether deposit from wallet ${transaction.from} ($account) to master $masterAddres" }
+                                    handleEther(transaction, time, account)
+                                }
+                                transaction.input == ETH_PREFIX && relays.containsKey(transaction.to) -> {
+                                    val account = relays[transaction.to]!!
+                                    logger.info { "Ether deposit to relay ${transaction.to} ($account)" }
+                                    handleEther(transaction, time, account)
+                                }
+                                ethAnchoredTokens.containsKey(transaction.to) -> {
+                                    handleErc20(
+                                        transaction,
+                                        time,
+                                        wallets,
+                                        relays,
+                                        ethAnchoredTokens[transaction.to]!!,
+                                        false
+                                    )
+                                }
+                                irohaAnchoredTokens.containsKey(transaction.to) -> {
+                                    handleErc20(
+                                        transaction,
+                                        time,
+                                        wallets,
+                                        relays,
+                                        irohaAnchoredTokens[transaction.to]!!,
+                                        true
+                                    )
+                                }
+                                else -> listOf()
+                            }
                         }
                 }, { ex ->
                     logger.error("Cannot parse block", ex)

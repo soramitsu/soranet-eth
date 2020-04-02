@@ -190,8 +190,8 @@ class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
 
     private val consumerTags = ArrayList<String>()
     private val connectionFactory = ConnectionFactory()
-    private var channel: Channel? = null
     private var connection: Connection? = null
+    private var channel: Channel? = null
 
     /**
      * Returns the last posted RMQ event
@@ -542,6 +542,15 @@ class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
         connectionFactory.port = rmqConfig.port
         connection = connectionFactory.newConnection()
         channel = connection!!.createChannel()
+        val arguments = hashMapOf(
+            // enable deduplication
+            Pair("x-message-deduplication", true),
+            // save deduplication data on disk rather that memory
+            Pair("x-cache-persistence", "disk"),
+            // save deduplication data 1 day
+            Pair("x-cache-ttl", 60_000 * 60 * 24)
+        )
+        channel!!.queueDeclare(EVENTS_QUEUE_NAME, true, false, false, arguments)
         consumerTags.add(
             channel!!.basicConsume(
                 EVENTS_QUEUE_NAME,
@@ -678,17 +687,8 @@ class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
             .ethGetTransactionByHash(transactionResponse.transactionHash).send()
         logger.info { "Gas used: ${ethTransaction.transaction.get().gas}" }
         logger.info { "Gas price: ${ethTransaction.transaction.get().gasPrice}" }
-        logger.info { "Tx input hash: ${txHash}" }
+        logger.info { "Tx input hash: $txHash" }
         logger.info { "Tx Input: ${ethTransaction.transaction.get().input}" }
-    }
-
-    override fun close() {
-        consumerTags.forEach {
-            channel?.basicCancel(it)
-        }
-        channel?.close()
-        connection?.close()
-        super.close()
     }
 
     /**

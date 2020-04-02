@@ -42,7 +42,7 @@ class EthNotificationMqProducer(rmqConfig: RMQConfig) {
         connection = connectionFactory.newConnection(subscriberExecutorService)
         channel = connection.createChannel()
         channel.basicQos(16)
-        val arguments = hashMapOf<String, Any>(
+        val arguments = hashMapOf(
             // enable deduplication
             Pair("x-message-deduplication", true),
             // save deduplication data on disk rather that memory
@@ -66,7 +66,6 @@ class EthNotificationMqProducer(rmqConfig: RMQConfig) {
                     Pair(DEDUPLICATION_HEADER, event.id + "_" + NOTIFICATION_SERVICE_NAME)
                 )
             ).build()
-        logger.info("Enqueue event $event to queue $EVENTS_QUEUE_NAME.")
         val json = gson.toJson(event)
         channel.basicPublish(
             NOTIFICATION_EXCHANGE_NAME,
