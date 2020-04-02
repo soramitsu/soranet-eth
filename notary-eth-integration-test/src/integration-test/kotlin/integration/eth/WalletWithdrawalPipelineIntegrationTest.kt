@@ -11,6 +11,7 @@ import com.d3.commons.util.getRandomString
 import com.d3.commons.util.toHexString
 import com.d3.eth.provider.ETH_PRECISION
 import com.d3.eth.token.EthTokenInfo
+import com.d3.notifications.event.SoraAckEthWithdrawalProofEvent
 import integration.helper.D3_DOMAIN
 import integration.helper.EthIntegrationHelperUtil
 import integration.helper.IrohaConfigHelper
@@ -65,6 +66,7 @@ class WalletWithdrawalPipelineIntegrationTest {
                 registrationConfig = ethRegistrationConfig
             )
         }
+        integrationHelper.runEthNotificationRmqConsumer()
     }
 
     lateinit var clientName: String
@@ -164,6 +166,13 @@ class WalletWithdrawalPipelineIntegrationTest {
                 masterBalanceInitial.subtract(amount),
                 masterBalanceActual
             )
+
+            // check notification published
+            val notification = integrationHelper.gson.fromJson(
+                integrationHelper.getLastRmqEvent().toString(),
+                SoraAckEthWithdrawalProofEvent::class.java
+            )
+            assertEquals(txHash, notification.irohaTxHash)
         }
     }
 
@@ -229,6 +238,13 @@ class WalletWithdrawalPipelineIntegrationTest {
                 masterBalanceInitial.subtract(bigIntegerValue),
                 masterBalanceActual
             )
+
+            // check notification published
+            val notification = integrationHelper.gson.fromJson(
+                integrationHelper.getLastRmqEvent().toString(),
+                SoraAckEthWithdrawalProofEvent::class.java
+            )
+            assertEquals(txHash, notification.irohaTxHash)
         }
     }
 
@@ -295,6 +311,13 @@ class WalletWithdrawalPipelineIntegrationTest {
             initialWithdrawalBalance.toBigDecimal() + amount.toBigDecimal(),
             integrationHelper.getIrohaAccountBalance(withdrawalAccountId, assetId).toBigDecimal()
         )
+
+        // check notification published
+        val notification = integrationHelper.gson.fromJson(
+            integrationHelper.getLastRmqEvent().toString(),
+            SoraAckEthWithdrawalProofEvent::class.java
+        )
+        assertEquals(txHash, notification.irohaTxHash)
     }
 
     /**
@@ -379,6 +402,13 @@ class WalletWithdrawalPipelineIntegrationTest {
                 initialWithdrawalBalance.toBigDecimal() + decimalAmount,
                 integrationHelper.getIrohaAccountBalance(withdrawalAccountId, assetId).toBigDecimal()
             )
+
+            // check notification published
+            val notification = integrationHelper.gson.fromJson(
+                integrationHelper.getLastRmqEvent().toString(),
+                SoraAckEthWithdrawalProofEvent::class.java
+            )
+            assertEquals(txHash, notification.irohaTxHash)
         }
     }
 }

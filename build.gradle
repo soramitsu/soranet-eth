@@ -1,9 +1,9 @@
 buildscript {
-    ext.kotlin_version = '1.3.10'
+    ext.kotlin_version = '1.3.61'
     ext.ktor_version = '1.0.0'
-    ext.notary_version = 'd65aa8c0a2bdb8fa7be9f65a7a9decfa71050493'
+    ext.notary_version = '802cde48849e5d034a0c07dbef8df967a9e33d7a'
     ext.chain_adapter_client_version= '9e65b4e38dd82d9a2ddc1065326050d4dc296075'
-    ext.web3j_version = '4.2.0'
+    ext.web3j_version = '4.4.1'
 
     repositories {
         mavenCentral()
@@ -43,6 +43,11 @@ allprojects {
         jcenter()
         maven { url = 'https://dl.bintray.com/kotlin/ktor' }
         maven { url 'https://jitpack.io' }
+        maven { url "https://dl.bintray.com/ethereum/maven/" }
+    }
+    test {
+        // Enable JUnit5 tests
+        useJUnitPlatform()
     }
 }
 
@@ -68,9 +73,9 @@ allprojects {
         // unit tests
         testImplementation('org.junit.jupiter:junit-jupiter-api:5.2.0')
         testRuntime('org.junit.jupiter:junit-jupiter-engine:5.2.0')
-        // https://mvnrepository.com/artifact/org.mockito/mockito-all
-        testImplementation group: 'org.mockito', name: 'mockito-all', version: '2.0.2-beta'
-        testImplementation("com.nhaarman.mockitokotlin2:mockito-kotlin:2.1.0")
+
+        testImplementation group: 'org.mockito', name: 'mockito-core', version: '3.3.3'
+        testImplementation("com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0")
         // for setting env variables in tests
         testImplementation ('com.github.stefanbirkner:system-rules:1.18.0'){
             exclude group: 'junit'
