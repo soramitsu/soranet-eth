@@ -20,6 +20,8 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
     implementation "org.web3j:core:$web3j_version"
+
+    implementation "com.squareup.moshi:moshi-kotlin:1.8.0"
 }
 
 apply plugin: 'application'

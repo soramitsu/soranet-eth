@@ -52,4 +52,5 @@ dependencies {
     implementation "com.github.soramitsu.soranet-validator:notifications-model:$notary_version"
 
     implementation "org.web3j:core:$web3j_version"
+    implementation "com.squareup.moshi:moshi-kotlin:1.8.0"
 }
