@@ -241,7 +241,7 @@ class EthChainHandler(
                         .map { it.get() as Transaction }
                         .flatMap { transaction ->
                             when {
-                                // TODO think how to proof withdrawals for other ERC20
+                                // TODO think how to proof withdrawals for other ERC20 if needed
                                 transaction.input != ETH_PREFIX && transaction.to == masterAddres -> {
                                     logger.info { "Contract method call of master $masterAddres" }
                                     handleWithdrawal(transaction, time)
