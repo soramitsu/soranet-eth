@@ -5,9 +5,10 @@
 
 package com.d3.eth.abi
 
+import com.d3.eth.helper.hexStringToByteArray
 import com.google.gson.*
+import org.web3j.utils.Numeric.toHexString
 import java.lang.reflect.Type
-import javax.xml.bind.DatatypeConverter
 
 internal object AbiGsonHelper {
     val customGson: Gson by lazy {
@@ -24,7 +25,7 @@ internal object AbiGsonHelper {
             typeOfT: Type,
             context: JsonDeserializationContext
         ): ByteArray {
-            return DatatypeConverter.parseHexBinary(removePrefixIfNeeded(json.asString))
+            return hexStringToByteArray(json.asString)
         }
 
         override fun serialize(
@@ -32,25 +33,9 @@ internal object AbiGsonHelper {
             typeOfSrc: Type,
             context: JsonSerializationContext
         ): JsonElement {
-            return JsonPrimitive(addPrefixIfNeeded(DatatypeConverter.printHexBinary(src)))
-        }
-
-        private fun addPrefixIfNeeded(address: String): String {
-            if (address.length == ETH_TRIMMED_ADDRESS_LENGTH) {
-                return "$ETH_PREFIX$address"
-            }
-            return address
-        }
-
-        private fun removePrefixIfNeeded(address: String): String {
-            if (address.length == ETH_ADDRESS_LENGTH) {
-                return address.removePrefix(ETH_PREFIX)
-            }
-            return address
+            return JsonPrimitive(toHexString(src))
         }
     }
 
-    private const val ETH_TRIMMED_ADDRESS_LENGTH = 40
-    private const val ETH_ADDRESS_LENGTH = ETH_TRIMMED_ADDRESS_LENGTH + 2
     const val ETH_PREFIX = "0x"
 }
