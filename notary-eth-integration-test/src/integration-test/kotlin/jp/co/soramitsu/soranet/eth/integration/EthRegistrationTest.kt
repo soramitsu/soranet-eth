@@ -10,12 +10,12 @@ import com.d3.commons.util.toHexString
 import integration.registration.RegistrationServiceTestEnvironment
 import jp.co.soramitsu.crypto.ed25519.Ed25519Sha3
 import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationHelperUtil
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.web3j.crypto.Keys
+import org.web3j.utils.Numeric
 import kotlin.test.assertEquals
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -26,13 +26,19 @@ class EthRegistrationTest {
 
     private val registrationServiceEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
 
+    private val ethDeposit: Job
+
     init {
+        ethDeposit = GlobalScope.launch {
+            integrationHelper.runEthDeposit()
+        }
         registrationServiceEnvironment.registrationInitialization.init()
         runBlocking { delay(5_000) }
     }
 
     @AfterAll
     fun dropDown() {
+        ethDeposit.cancel()
         registrationServiceEnvironment.close()
     }
 
@@ -60,8 +66,13 @@ class EthRegistrationTest {
             ethKeyPair
         )
 
+        Thread.sleep(5_000)
+
         // check relay address
-        assertEquals(Keys.getAddress(ethKeyPair), integrationHelper.getWalletByAccount(clientId).get())
+        assertEquals(
+            Numeric.prependHexPrefix(Keys.getAddress(ethKeyPair)),
+            integrationHelper.getWalletByAccount(clientId).get()
+        )
     }
 
     /**
@@ -88,8 +99,13 @@ class EthRegistrationTest {
             ethKeyPair
         )
 
+        Thread.sleep(5_000)
+
         // check relay address
-        assertEquals(Keys.getAddress(ethKeyPair), integrationHelper.getWalletByAccount(clientId).get())
+        assertEquals(
+            Numeric.prependHexPrefix(Keys.getAddress(ethKeyPair)),
+            integrationHelper.getWalletByAccount(clientId).get()
+        )
 
         // try to register with the same name
         integrationHelper.registerEthereumWallet(
@@ -99,6 +115,9 @@ class EthRegistrationTest {
         )
 
         // check relay address the same
-        assertEquals(Keys.getAddress(ethKeyPair), integrationHelper.getWalletByAccount(clientId).get())
+        assertEquals(
+            Numeric.prependHexPrefix(Keys.getAddress(ethKeyPair)),
+            integrationHelper.getWalletByAccount(clientId).get()
+        )
     }
 }

@@ -33,8 +33,7 @@ import kotlin.test.assertTrue
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EthRegistrationProofIntegrationTest {
     private lateinit var cth: ContractTestHelper
-    private val integrationHelper =
-        EthIntegrationHelperUtil()
+    private val integrationHelper = EthIntegrationHelperUtil()
     private val registrationTestEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
     private val ethDeposit: Job
     private val depositConfig = integrationHelper.configHelper.createEthDepositConfig()

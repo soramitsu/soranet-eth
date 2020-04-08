@@ -449,7 +449,7 @@ class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
         ethereumAddress: String,
         notaryName: String,
         notaryEndpointAddress: String
-    ) {
+    ): String {
         logger.info {
             "Send expansion transaction publicKey=${publicKey} " +
                     "eth_address=${ethereumAddress}, " +
@@ -478,6 +478,7 @@ class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
         ).fold(
             { hash ->
                 logger.info { "Expansion trigger transaction with hash $hash sent" }
+                return hash
             },
             { ex -> throw ex }
         )

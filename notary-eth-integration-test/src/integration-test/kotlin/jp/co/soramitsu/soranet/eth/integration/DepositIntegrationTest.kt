@@ -5,7 +5,6 @@
 
 package jp.co.soramitsu.soranet.eth.integration
 
-import com.d3.commons.registration.registrationConfig
 import com.d3.commons.util.getRandomString
 import com.d3.commons.util.toHexString
 import integration.helper.D3_DOMAIN
@@ -41,13 +40,17 @@ class DepositIntegrationTest {
     private val etherAssetId = "ether#ethereum"
 
     private val registrationTestEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
+
+    private val ethRegistrationConfig = integrationHelper.ethRegistrationConfig
+
     private val ethDeposit: Job
 
     init {
         // run notary
         ethDeposit = GlobalScope.launch {
             integrationHelper.runEthDeposit(
-                ethDepositConfig = integrationHelper.configHelper.createEthDepositConfig()
+                ethDepositConfig = integrationHelper.configHelper.createEthDepositConfig(),
+                registrationConfig = ethRegistrationConfig
             )
         }
         registrationTestEnvironment.registrationInitialization.init()
@@ -58,10 +61,9 @@ class DepositIntegrationTest {
 
     private fun registerClient(accountName: String, keypair: KeyPair, ecKeyPair: ECKeyPair) {
         // register client in Iroha
-        val res = integrationHelper.sendRegistrationRequest(
+        val res = registrationTestEnvironment.register(
             accountName,
-            keypair.public.toHexString(),
-            registrationConfig.port
+            keypair.public.toHexString()
         )
         Assertions.assertEquals(200, res.statusCode)
 
@@ -106,7 +108,7 @@ class DepositIntegrationTest {
             val amount = BigInteger.valueOf(1_234_000_000_000)
             // send ETH
             integrationHelper.purgeAndwaitOneIrohaBlock {
-                integrationHelper.sendEth(amount, ethAddress)
+                integrationHelper.sendEth(amount.multiply(BigInteger.TWO), ethAddress)
             }
             integrationHelper.purgeAndwaitOneIrohaBlock {
                 integrationHelper.sendEth(
@@ -157,14 +159,19 @@ class DepositIntegrationTest {
             val clientIrohaAccountId = "$clientIrohaAccount@$D3_DOMAIN"
             val ethAddress = Keys.getAddress(ethKeyPair.publicKey)
             val initialAmount = integrationHelper.getIrohaAccountBalance(clientIrohaAccountId, assetId)
-            val amount = BigInteger.valueOf(51)
+            val amount = BigInteger.valueOf(1_234_000_000_000)
 
             // send ERC20
             integrationHelper.purgeAndwaitOneIrohaBlock {
                 integrationHelper.sendERC20Token(tokenAddress, amount, ethAddress)
             }
+            // Eth for gas
             integrationHelper.purgeAndwaitOneIrohaBlock {
-                integrationHelper.sendEth(
+                integrationHelper.sendEth(amount.multiply(BigInteger.TWO), ethAddress)
+            }
+            integrationHelper.purgeAndwaitOneIrohaBlock {
+                integrationHelper.sendERC20Token(
+                    tokenAddress,
                     amount,
                     integrationHelper.masterContract.contractAddress,
                     Credentials.create(ethKeyPair)

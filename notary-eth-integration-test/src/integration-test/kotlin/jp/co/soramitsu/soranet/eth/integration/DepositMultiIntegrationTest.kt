@@ -35,8 +35,7 @@ import java.time.Duration
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class DepositMultiIntegrationTest {
     /** Utility functions for integration tests */
-    private val integrationHelper =
-        EthIntegrationHelperUtil()
+    private val integrationHelper = EthIntegrationHelperUtil()
     private val keyPair2 = ModelUtil.generateKeypair()
 
     /** Ethereum assetId in Iroha */

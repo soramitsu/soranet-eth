@@ -180,33 +180,36 @@ class EthChainHandler(
         if (!receipt.transactionReceipt.get().isStatusOK) {
             logger.warn { "Transaction ${transaction.hash} from Ethereum has FAIL status" }
         } else {
-            val decodeMethod = masterContractAbiDecoder.decodeMethod(transaction.input)
-            when (decodeMethod.name) {
-                abiXorWithdrawalMethodName, abiOtherWithdrawalMethodName -> {
-                    val param = decodeMethod.params.find {
-                        it.name == txHashAbiParameterName &&
-                                it.type == txHashAbiParameterType
-                    }
-                    if (param == null) {
-                        logger.warn { "Transaction ${transaction.hash} contains unexpected method parameters" }
-                        return emptyList()
-                    }
-                    val irohaTxHash = Utils.toHex(param.value as ByteArray)
-                    ethNotificationMqProducer.enqueue(
-                        AckEthWithdrawalProofEvent(
-                            irohaTxHash,
-                            "$irohaTxHash$withdrawalAckId",
-                            time.toLong(),
-                            transaction.blockNumber.toLong(),
-                            transaction.transactionIndex.toInt()
+            try {
+                val decodeMethod = masterContractAbiDecoder.decodeMethod(transaction.input)
+                when (decodeMethod.name) {
+                    abiXorWithdrawalMethodName, abiOtherWithdrawalMethodName -> {
+                        val param = decodeMethod.params.find {
+                            it.name == txHashAbiParameterName &&
+                                    it.type == txHashAbiParameterType
+                        }
+                        if (param == null) {
+                            logger.warn { "Transaction ${transaction.hash} contains unexpected method parameters" }
+                            return emptyList()
+                        }
+                        val irohaTxHash = Utils.toHex(param.value as ByteArray)
+                        ethNotificationMqProducer.enqueue(
+                            AckEthWithdrawalProofEvent(
+                                irohaTxHash,
+                                "$irohaTxHash$withdrawalAckId",
+                                time.toLong(),
+                                transaction.blockNumber.toLong(),
+                                transaction.transactionIndex.toInt()
+                            )
                         )
-                    )
+                    }
+                    else -> {
+                        logger.warn { "Transaction ${transaction.hash} contains unexpected method call" }
+                    }
                 }
-                else -> {
-                    logger.warn { "Transaction ${transaction.hash} contains unexpected method call" }
-                }
+            }catch (e: Exception) {
+                logger.error("An error during contract call processing occured", e)
             }
-
         }
         // no need to process the event in Iroha
         return emptyList()

@@ -29,11 +29,11 @@ class EthAddressProviderIrohaImpl(
 ) : EthAddressProvider {
     init {
         logger.info {
-            "Init relay provider with storage account '$storageAccountId' and setter account '$setterAccountId'"
+            "Init address provider with storage account '$storageAccountId' and setter account '$setterAccountId'"
         }
     }
 
-    private val nonFreeRelayPredicate = { _: String, value: String -> value != "free" }
+    private val anyAddressPredicate = { _: String, _: String -> true }
 
     /**
      * Gets all non free relay wallets
@@ -44,7 +44,7 @@ class EthAddressProviderIrohaImpl(
         return queryHelper.getAccountDetailsFilter(
             storageAccountId,
             setterAccountId,
-            nonFreeRelayPredicate
+            anyAddressPredicate
         )
     }
 

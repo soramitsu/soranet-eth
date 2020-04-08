@@ -13,6 +13,7 @@ import jp.co.soramitsu.soranet.eth.sidechain.util.DeployHelper
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import kotlin.test.assertEquals
@@ -21,15 +22,20 @@ import kotlin.test.assertTrue
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EthExpansionTest {
-    private val integrationHelper =
-        EthIntegrationHelperUtil()
+    private val integrationHelper = EthIntegrationHelperUtil()
     private val depositService: Job
 
     init {
         depositService = GlobalScope.launch {
-            integrationHelper.runEthDeposit(ethDepositConfig = integrationHelper.configHelper.createEthDepositConfig())
+            integrationHelper.runEthDeposit()
         }
-        Thread.sleep(15_000)
+        Thread.sleep(10_000)
+    }
+
+    @AfterAll
+    fun dropDown() {
+        depositService.cancel()
+        integrationHelper.close()
     }
 
     /**
@@ -50,7 +56,7 @@ class EthExpansionTest {
         ).loadMasterContract(integrationHelper.masterContract.contractAddress)
         assertFalse { masterContract.isPeer(ethAddress).send() }
 
-        integrationHelper.triggerExpansion(
+        val hash = integrationHelper.triggerExpansion(
             integrationHelper.accountHelper.notaryAccount.accountId,
             publicKey,
             2,
@@ -58,6 +64,7 @@ class EthExpansionTest {
             notaryName,
             notaryEndpointAddress
         )
+
         Thread.sleep(5_000)
 
         assertTrue { masterContract.isPeer(ethAddress).send() }

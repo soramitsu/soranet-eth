@@ -93,10 +93,9 @@ class WithdrawalIntegrationTest {
             // create
             val client = String.getRandomString(9)
             // register client in Iroha
-            var res = integrationHelper.sendRegistrationRequest(
+            var res = registrationTestEnvironment.register(
                 client,
-                ModelUtil.generateKeypair().public.toHexString(),
-                registrationTestEnvironment.registrationConfig.port
+                ModelUtil.generateKeypair().public.toHexString()
             )
             assertEquals(200, res.statusCode)
             val clientId = "$client@$D3_DOMAIN"
@@ -107,10 +106,12 @@ class WithdrawalIntegrationTest {
             )
 
             integrationHelper.addIrohaAssetTo(clientId, assetId, decimalAmount)
+
+            Thread.sleep(5_000)
             val relay = EthAddressProviderIrohaImpl(
                 integrationHelper.queryHelper,
                 integrationHelper.accountHelper.ethereumWalletStorageAccount.accountId,
-                integrationHelper.accountHelper.registrationAccount.accountId,
+                integrationHelper.accountHelper.notaryAccount.accountId,
                 ETH_WALLET
             ).getAddresses().get().filter {
                 it.value == clientId

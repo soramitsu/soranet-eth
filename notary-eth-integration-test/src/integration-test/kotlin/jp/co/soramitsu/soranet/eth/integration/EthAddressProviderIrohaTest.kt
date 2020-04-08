@@ -5,21 +5,25 @@
 
 package jp.co.soramitsu.soranet.eth.integration
 
-import com.d3.commons.registration.registrationConfig
 import com.d3.commons.util.getRandomString
 import com.d3.commons.util.toHexString
 import integration.helper.D3_DOMAIN
 import integration.helper.IrohaConfigHelper
+import integration.registration.RegistrationServiceTestEnvironment
 import jp.co.soramitsu.crypto.ed25519.Ed25519Sha3
 import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationHelperUtil
 import jp.co.soramitsu.soranet.eth.provider.ETH_WALLET
 import jp.co.soramitsu.soranet.eth.provider.EthAddressProviderIrohaImpl
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.fail
 import org.web3j.crypto.Keys
+import org.web3j.utils.Numeric
 import java.time.Duration
 
 /**
@@ -31,15 +35,28 @@ class EthAddressProviderIrohaTest {
     val integrationHelper = EthIntegrationHelperUtil()
 
     /** Iroha account that holds details */
-    private val relayStorage = integrationHelper.accountHelper.notaryAccount.accountId
+    private val relayStorage = integrationHelper.accountHelper.ethereumWalletStorageAccount.accountId
 
     /** Iroha account that has set details */
-    private val relaySetter = integrationHelper.accountHelper.registrationAccount.accountId
+    private val relaySetter = integrationHelper.accountHelper.notaryAccount.accountId
 
     private val timeoutDuration = Duration.ofMinutes(IrohaConfigHelper.timeoutMinutes)
 
+    private val registrationTestEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
+
+    private val ethDeposit: Job
+
+    init {
+        ethDeposit = GlobalScope.launch {
+            integrationHelper.runEthDeposit()
+        }
+        registrationTestEnvironment.registrationInitialization.init()
+        Thread.sleep(5_000)
+    }
+
     @AfterAll
     fun dropDown() {
+        ethDeposit.cancel()
         integrationHelper.close()
     }
 
@@ -56,10 +73,9 @@ class EthAddressProviderIrohaTest {
             val clientIrohaAccount = String.getRandomString(9)
             val irohaKeyPair = Ed25519Sha3().generateKeypair()
             val ethKeyPair = Keys.createEcKeyPair()
-            val res = integrationHelper.sendRegistrationRequest(
+            val res = registrationTestEnvironment.register(
                 clientIrohaAccount,
-                irohaKeyPair.public.toHexString(),
-                registrationConfig.port
+                irohaKeyPair.public.toHexString()
             )
             assertEquals(200, res.statusCode)
             val clientId = "$clientIrohaAccount@$D3_DOMAIN"
@@ -69,6 +85,8 @@ class EthAddressProviderIrohaTest {
                 ethKeyPair
             )
 
+            Thread.sleep(5_000)
+
             EthAddressProviderIrohaImpl(
                 integrationHelper.queryHelper,
                 relayStorage,
@@ -76,7 +94,12 @@ class EthAddressProviderIrohaTest {
                 ETH_WALLET
             ).getAddresses()
                 .fold(
-                    { assertTrue(it.entries.any { it.key == Keys.getAddress(ethKeyPair) && it.value == clientId }) },
+                    {
+                        assertTrue(it.entries.any {
+                            it.key == Numeric.prependHexPrefix(Keys.getAddress(ethKeyPair))
+                                    && it.value == clientId
+                        })
+                    },
                     { ex -> fail("cannot get addresses", ex) }
                 )
         }

@@ -78,7 +78,7 @@ class FailedTransactionTest {
                 irohaKeyPair,
                 ethKeyPair
             )
-            integrationHelper.sendEth(BigInteger.valueOf(1), Keys.getAddress(ethKeyPair))
+            integrationHelper.sendEth(BigInteger.valueOf(10000000), Keys.getAddress(ethKeyPair))
             integrationHelper.sendEth(BigInteger.valueOf(1), failerAddress, Credentials.create(ethKeyPair))
 
             assertEquals(BigInteger.ZERO, integrationHelper.getEthBalance(failerAddress))
