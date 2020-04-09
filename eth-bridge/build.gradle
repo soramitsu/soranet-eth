@@ -50,7 +50,7 @@ soramitsu {
 }
 
 task runEthDeposit(type: JavaExec) {
-    main = 'com.d3.eth.deposit.EthDepositMain'
+    main = 'jp.co.soramitsu.soranet.eth.deposit.EthDepositMain'
     classpath = sourceSets.main.runtimeClasspath
     setWorkingDir("$rootDir/")
 }

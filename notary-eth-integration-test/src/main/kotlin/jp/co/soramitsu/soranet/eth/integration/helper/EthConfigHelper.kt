@@ -13,8 +13,8 @@ import integration.helper.IrohaConfigHelper
 import jp.co.soramitsu.soranet.eth.config.EthereumConfig
 import jp.co.soramitsu.soranet.eth.config.EthereumPasswords
 import jp.co.soramitsu.soranet.eth.config.loadEthPasswords
-import jp.co.soramitsu.soranet.eth.deposit.EthDepositConfig
-import jp.co.soramitsu.soranet.eth.deposit.RefundConfig
+import jp.co.soramitsu.soranet.eth.bridge.EthDepositConfig
+import jp.co.soramitsu.soranet.eth.bridge.RefundConfig
 import jp.co.soramitsu.soranet.eth.registration.EthRegistrationConfig
 import java.math.BigInteger
 

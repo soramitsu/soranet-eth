@@ -28,7 +28,7 @@ apply plugin: 'kotlin'
  * Call master contract method isPeer()
  */
 task runCallMasterIsPeer(type: JavaExec) {
-    main = 'com.d3.eth.util.CallMasterIsPeer'
+    main = 'jp.co.soramitsu.soranet.eth.util.CallMasterIsPeer'
     classpath = sourceSets.main.runtimeClasspath
     setWorkingDir("$rootDir/")
 }
@@ -37,7 +37,7 @@ task runCallMasterIsPeer(type: JavaExec) {
  * Call master contract method withdraw()
  */
 task runCallMasterWithdrawToWallet(type: JavaExec) {
-    main = 'com.d3.eth.util.CallMasterWithdrawToWallet'
+    main = 'jp.co.soramitsu.soranet.eth.util.CallMasterWithdrawToWallet'
     classpath = sourceSets.main.runtimeClasspath
     setWorkingDir("$rootDir/")
 }
@@ -48,14 +48,14 @@ task runCallMasterWithdrawToWallet(type: JavaExec) {
  * ./gradlew runSendEtherFromContract --args="0x4a59b6031e42f77df0554d253bd63cbf9113ea30 0.00000001"
  */
 task runSendEtherFromContract(type: JavaExec) {
-    main = 'com.d3.eth.deploy.TransferEthereumFromContract'
+    main = 'jp.co.soramitsu.soranet.eth.deploy.TransferEthereumFromContract'
     classpath = sourceSets.main.runtimeClasspath
     setWorkingDir("$rootDir/")
 }
 
 // Deploy ethereum smart contracts - RelayRegistry, Master, add notaries wallets to Master and lock Master.
 task runPreDeployEthereum(type: JavaExec) {
-    main = 'com.d3.eth.deploy.EthPreDeployMain'
+    main = 'jp.co.soramitsu.soranet.eth.deploy.EthPreDeployMain'
     classpath = sourceSets.main.runtimeClasspath
     setWorkingDir("$rootDir/")
 }

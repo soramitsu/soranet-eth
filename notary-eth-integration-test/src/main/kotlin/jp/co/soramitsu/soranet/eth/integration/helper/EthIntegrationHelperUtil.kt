@@ -27,12 +27,12 @@ import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.Delivery
 import integration.helper.D3_DOMAIN
 import integration.helper.IrohaIntegrationHelperUtil
+import jp.co.soramitsu.soranet.eth.bridge.ETH_WITHDRAWAL_PROOF_DOMAIN
+import jp.co.soramitsu.soranet.eth.bridge.EthDepositConfig
+import jp.co.soramitsu.soranet.eth.bridge.WithdrawalProof
+import jp.co.soramitsu.soranet.eth.bridge.executeDeposit
 import jp.co.soramitsu.soranet.eth.config.EthereumPasswords
 import jp.co.soramitsu.soranet.eth.constants.ETH_MASTER_ADDRESS_KEY
-import jp.co.soramitsu.soranet.eth.deposit.ETH_WITHDRAWAL_PROOF_DOMAIN
-import jp.co.soramitsu.soranet.eth.deposit.EthDepositConfig
-import jp.co.soramitsu.soranet.eth.deposit.WithdrawalProof
-import jp.co.soramitsu.soranet.eth.deposit.executeDeposit
 import jp.co.soramitsu.soranet.eth.mq.EthNotificationMqProducer.Companion.EVENTS_QUEUE_NAME
 import jp.co.soramitsu.soranet.eth.provider.ETH_DOMAIN
 import jp.co.soramitsu.soranet.eth.provider.ETH_WALLET
@@ -44,7 +44,6 @@ import jp.co.soramitsu.soranet.eth.registration.wallet.createRegistrationProof
 import jp.co.soramitsu.soranet.eth.sidechain.EthChainListener
 import jp.co.soramitsu.soranet.eth.token.EthTokenInfo
 import kotlinx.coroutines.runBlocking
-import mu.KLogging
 import org.json.JSONObject
 import org.web3j.crypto.Credentials
 import org.web3j.crypto.ECKeyPair
@@ -60,24 +59,23 @@ import java.util.*
  * Utility class that makes testing more comfortable.
  * Class lazily creates new master contract in Ethereum and master account in Iroha.
  */
-class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
+object EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
+    private val logger = logger()
     val gson = GsonInstance.get()
 
     val ethTestConfig =
         loadConfigs("test", TestEthereumConfig::class.java, "/test.properties").get()
 
-    override val accountHelper by lazy {
+    override val accountHelper =
         EthereumAccountHelper(
             irohaAPI
         )
-    }
 
     /** Ethereum utils */
-    private val contractTestHelper by lazy { ContractTestHelper() }
+    private val contractTestHelper =
+        ContractTestHelper()
 
-    private val tokenProviderIrohaConsumer by lazy {
-        IrohaConsumerImpl(accountHelper.tokenSetterAccount, irohaAPI)
-    }
+    private val tokenProviderIrohaConsumer = IrohaConsumerImpl(accountHelper.tokenSetterAccount, irohaAPI)
 
     val tokensProvider = EthTokensProviderImpl(
         queryHelper,
@@ -88,9 +86,7 @@ class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
     )
 
     /** Iroha consumer to set Ethereum contract addresses in Iroha */
-    private val ethAddressWriterIrohaConsumer by lazy {
-        IrohaConsumerImpl(accountHelper.ethAddressesWriter, irohaAPI)
-    }
+    private val ethAddressWriterIrohaConsumer = IrohaConsumerImpl(accountHelper.ethAddressesWriter, irohaAPI)
 
     /** New master ETH master contract*/
     val masterContract by lazy {
@@ -105,12 +101,11 @@ class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
         contract
     }
 
-    override val configHelper by lazy {
+    override val configHelper =
         EthConfigHelper(
             accountHelper,
             masterContract.contractAddress
         )
-    }
 
     val ethRegistrationConfig by lazy { configHelper.createEthRegistrationConfig() }
 
@@ -123,15 +118,13 @@ class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
     )
 
     /** Provider that is used to store/fetch tokens*/
-    val ethTokensProvider by lazy {
-        EthTokensProviderImpl(
-            queryHelper,
-            accountHelper.ethAnchoredTokenStorageAccount.accountId,
-            accountHelper.tokenSetterAccount.accountId,
-            accountHelper.irohaAnchoredTokenStorageAccount.accountId,
-            accountHelper.tokenSetterAccount.accountId
-        )
-    }
+    val ethTokensProvider = EthTokensProviderImpl(
+        queryHelper,
+        accountHelper.ethAnchoredTokenStorageAccount.accountId,
+        accountHelper.tokenSetterAccount.accountId,
+        accountHelper.irohaAnchoredTokenStorageAccount.accountId,
+        accountHelper.tokenSetterAccount.accountId
+    )
 
     private val registrationQueryHelper = IrohaQueryHelperImpl(
         irohaAPI,
@@ -140,14 +133,12 @@ class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
     )
 
     /** Provider of ETH wallets created by registrationAccount*/
-    private val ethWalletsProvider by lazy {
-        EthAddressProviderIrohaImpl(
-            registrationQueryHelper,
-            accountHelper.ethAddressesStorage.accountId,
-            accountHelper.registrationAccount.accountId,
-            ETH_WALLET
-        )
-    }
+    private val ethWalletsProvider = EthAddressProviderIrohaImpl(
+        registrationQueryHelper,
+        accountHelper.ethAddressesStorage.accountId,
+        accountHelper.registrationAccount.accountId,
+        ETH_WALLET
+    )
 
     private val rmqEvents = Collections.synchronizedList(ArrayList<JSONObject>())
 
@@ -181,7 +172,12 @@ class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
      */
     fun deployRandomERC20Token(precision: Int = 0): Pair<EthTokenInfo, String> {
         val name = String.getRandomString(5)
-        return Pair(EthTokenInfo(name, ETH_DOMAIN, precision), deployERC20Token(name, precision))
+        return Pair(EthTokenInfo(name, ETH_DOMAIN, precision),
+            deployERC20Token(
+                name,
+                precision
+            )
+        )
     }
 
     /**
@@ -195,7 +191,10 @@ class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
         logger.info { "create $name ERC20 token" }
         val tokenAddress =
             contractTestHelper.deployHelper.deployERC20TokenSmartContract().contractAddress
-        addEthAnchoredERC20Token(tokenAddress, EthTokenInfo(name, ETH_DOMAIN, precision))
+        addEthAnchoredERC20Token(
+            tokenAddress,
+            EthTokenInfo(name, ETH_DOMAIN, precision)
+        )
         masterContract.addToken(tokenAddress).send()
         return tokenAddress
     }
@@ -285,7 +284,9 @@ class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
      * Returns master contract ETH balance
      */
     fun getMasterEthBalance(): BigInteger {
-        return getEthBalance(masterContract.contractAddress)
+        return getEthBalance(
+            masterContract.contractAddress
+        )
     }
 
     /**
@@ -556,9 +557,4 @@ class EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
         logger.info { "Tx input hash: $txHash" }
         logger.info { "Tx Input: ${ethTransaction.transaction.get().input}" }
     }
-
-    /**
-     * Logger
-     */
-    companion object : KLogging()
 }

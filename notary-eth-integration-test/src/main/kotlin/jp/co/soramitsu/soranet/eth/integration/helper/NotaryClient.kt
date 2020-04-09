@@ -33,10 +33,10 @@ class NotaryClient(
     private val etherHelper = DeployHelper(ethConfig, ethPasswordConfig)
 
     /** Notary Iroha account id */
-    private val notaryAccountId = integrationHelper.accountHelper.notaryAccount.accountId
+    private val notaryAccountId = EthIntegrationHelperUtil.accountHelper.notaryAccount.accountId
 
     /** Ethereum registration service */
-    private val registrationAccountId = integrationHelper.accountHelper.registrationAccount.accountId
+    private val registrationAccountId = EthIntegrationHelperUtil.accountHelper.registrationAccount.accountId
 
     /** Client Iroha account id */
     val accountId = irohaCredential.accountId
@@ -55,11 +55,12 @@ class NotaryClient(
      * Send HTTP POST request to registration service to register user with Relay
      */
     fun signUp(): khttp.responses.Response {
-        val response = integrationHelper.sendRegistrationRequest(
-            name,
-            irohaCredential.keyPair.public.toHexString(),
-            integrationHelper.ethRegistrationConfig.port
-        )
+        val response =
+            EthIntegrationHelperUtil.sendRegistrationRequest(
+                name,
+                irohaCredential.keyPair.public.toHexString(),
+                EthIntegrationHelperUtil.ethRegistrationConfig.port
+            )
         relay = response.text
 
         return response
@@ -122,7 +123,9 @@ class NotaryClient(
      * Get ethereum wallet balance of client wallet.
      */
     fun getEthBalance(): BigInteger {
-        return integrationHelper.getEthBalance(ethAddress)
+        return EthIntegrationHelperUtil.getEthBalance(
+            ethAddress
+        )
     }
 
     /**
