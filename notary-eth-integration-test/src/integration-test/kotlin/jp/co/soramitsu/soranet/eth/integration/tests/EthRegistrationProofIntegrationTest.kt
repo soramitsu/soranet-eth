@@ -94,10 +94,9 @@ class EthRegistrationProofIntegrationTest {
             val ethereumAddress = "0x${Keys.getAddress(ethKeypair.publicKey)}"
 
             // register iroha account
-            val res = integrationHelper.sendRegistrationRequest(
+            val res = registrationTestEnvironment.register(
                 clientIrohaAccount,
-                keyPair.public.toHexString(),
-                registrationTestEnvironment.registrationConfig.port
+                keyPair.public.toHexString()
             )
             assertEquals(200, res.statusCode)
 
@@ -124,10 +123,9 @@ class EthRegistrationProofIntegrationTest {
             val ethereumAddress = "0x${Keys.getAddress(ethKeypair)}"
 
             // register iroha account
-            val res = integrationHelper.sendRegistrationRequest(
+            val res = registrationTestEnvironment.register(
                 clientIrohaAccount,
-                keyPair.public.toHexString(),
-                registrationTestEnvironment.registrationConfig.port
+                keyPair.public.toHexString()
             )
             assertEquals(200, res.statusCode)
 
@@ -179,10 +177,9 @@ class EthRegistrationProofIntegrationTest {
             val ethereumAddress = "0x${Keys.getAddress(ethKeypair.publicKey)}"
 
             // register iroha account
-            val res = integrationHelper.sendRegistrationRequest(
+            val res = registrationTestEnvironment.register(
                 clientIrohaAccount,
-                keyPair.public.toHexString(),
-                registrationTestEnvironment.registrationConfig.port
+                keyPair.public.toHexString()
             )
             assertEquals(200, res.statusCode)
 
@@ -237,17 +234,15 @@ class EthRegistrationProofIntegrationTest {
             val clientId2 = "$clientIrohaAccount2@d3"
 
             // register iroha accounts
-            val res1 = integrationHelper.sendRegistrationRequest(
+            val res1 = registrationTestEnvironment.register(
                 clientIrohaAccount1,
-                keyPair1.public.toHexString(),
-                registrationTestEnvironment.registrationConfig.port
+                keyPair1.public.toHexString()
             )
             assertEquals(200, res1.statusCode)
 
-            val res2 = integrationHelper.sendRegistrationRequest(
+            val res2 = registrationTestEnvironment.register(
                 clientIrohaAccount2,
-                keyPair2.public.toHexString(),
-                registrationTestEnvironment.registrationConfig.port
+                keyPair2.public.toHexString()
             )
             assertEquals(200, res2.statusCode)
 
