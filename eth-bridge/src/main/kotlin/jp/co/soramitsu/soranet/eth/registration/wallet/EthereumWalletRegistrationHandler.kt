@@ -85,6 +85,7 @@ class EthereumWalletRegistrationHandler(
                                 ex
                             )
                             saveFailedRegistration(clientId, txHash, ex.message!!, time)
+                            logger.info("Saved the fail reason for client $clientId")
                         }
                     }
             }

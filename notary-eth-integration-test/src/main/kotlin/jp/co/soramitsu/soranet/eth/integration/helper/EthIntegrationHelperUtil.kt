@@ -66,14 +66,10 @@ object EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
     val ethTestConfig =
         loadConfigs("test", TestEthereumConfig::class.java, "/test.properties").get()
 
-    override val accountHelper =
-        EthereumAccountHelper(
-            irohaAPI
-        )
+    override val accountHelper = EthereumAccountHelper(irohaAPI)
 
     /** Ethereum utils */
-    private val contractTestHelper =
-        ContractTestHelper()
+    private val contractTestHelper = ContractTestHelper()
 
     private val tokenProviderIrohaConsumer = IrohaConsumerImpl(accountHelper.tokenSetterAccount, irohaAPI)
 
@@ -101,11 +97,10 @@ object EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
         contract
     }
 
-    override val configHelper =
-        EthConfigHelper(
-            accountHelper,
-            masterContract.contractAddress
-        )
+    override val configHelper = EthConfigHelper(
+        accountHelper,
+        masterContract.contractAddress
+    )
 
     val ethRegistrationConfig by lazy { configHelper.createEthRegistrationConfig() }
 
@@ -136,7 +131,7 @@ object EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
     private val ethWalletsProvider = EthAddressProviderIrohaImpl(
         registrationQueryHelper,
         accountHelper.ethAddressesStorage.accountId,
-        accountHelper.registrationAccount.accountId,
+        accountHelper.notaryAccount.accountId,
         ETH_WALLET
     )
 
@@ -172,7 +167,8 @@ object EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
      */
     fun deployRandomERC20Token(precision: Int = 0): Pair<EthTokenInfo, String> {
         val name = String.getRandomString(5)
-        return Pair(EthTokenInfo(name, ETH_DOMAIN, precision),
+        return Pair(
+            EthTokenInfo(name, ETH_DOMAIN, precision),
             deployERC20Token(
                 name,
                 precision
@@ -419,7 +415,11 @@ object EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
                 EVENTS_QUEUE_NAME,
                 true,
                 { _: String, delivery: Delivery ->
-                    rmqEvents.add(JSONObject(String(delivery.body)))
+                    run {
+                        val element = JSONObject(String(delivery.body))
+                        logger.info("Consumed event $element from notifications MQ")
+                        rmqEvents.add(element)
+                    }
                 },
                 { _ -> }
             )

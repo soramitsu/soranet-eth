@@ -12,6 +12,7 @@ import integration.helper.IrohaConfigHelper
 import integration.registration.RegistrationServiceTestEnvironment
 import jp.co.soramitsu.crypto.ed25519.Ed25519Sha3
 import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationHelperUtil
+import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationTestEnvironment
 import jp.co.soramitsu.soranet.eth.provider.ETH_DOMAIN
 import jp.co.soramitsu.soranet.eth.token.EthTokenInfo
 import kotlinx.coroutines.GlobalScope
@@ -31,23 +32,21 @@ import kotlin.test.assertEquals
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class FailedTransactionTest {
-    val integrationHelper = EthIntegrationHelperUtil
+    private val ethIntegrationTestEnvironment = EthIntegrationTestEnvironment
+
+    val integrationHelper = ethIntegrationTestEnvironment.integrationHelper
+
+    private val registrationTestEnvironment = ethIntegrationTestEnvironment.registrationTestEnvironment
 
     private val timeoutDuration = Duration.ofMinutes(IrohaConfigHelper.timeoutMinutes)
 
-    private val registrationTestEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
-    private val ethDeposit: Job
-
     init {
-        ethDeposit = GlobalScope.launch {
-            integrationHelper.runEthDeposit()
-        }
-        registrationTestEnvironment.registrationInitialization.init()
+        ethIntegrationTestEnvironment.init()
     }
 
     @AfterAll
     fun dropDown() {
-        ethDeposit.cancel()
+        ethIntegrationTestEnvironment.close()
     }
 
     /**

@@ -14,6 +14,7 @@ import integration.helper.D3_DOMAIN
 import integration.helper.IrohaConfigHelper
 import integration.registration.RegistrationServiceTestEnvironment
 import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationHelperUtil
+import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationTestEnvironment
 import jp.co.soramitsu.soranet.eth.provider.ETH_PRECISION
 import jp.co.soramitsu.soranet.eth.token.EthTokenInfo
 import kotlinx.coroutines.GlobalScope
@@ -33,11 +34,12 @@ import kotlin.test.assertEquals
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class WalletWithdrawalPipelineIntegrationTest {
+    private val ethIntegrationTestEnvironment = EthIntegrationTestEnvironment
 
     /** Integration tests util */
-    private val integrationHelper = EthIntegrationHelperUtil
+    private val integrationHelper = ethIntegrationTestEnvironment.integrationHelper
 
-    private val registrationTestEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
+    private val registrationTestEnvironment = ethIntegrationTestEnvironment.registrationTestEnvironment
 
     /** Ethereum test address where we want to withdraw to */
     private val toAddress = integrationHelper.ethTestConfig.ethTestAccount
@@ -47,14 +49,8 @@ class WalletWithdrawalPipelineIntegrationTest {
 
     private val timeoutDuration = Duration.ofMinutes(IrohaConfigHelper.timeoutMinutes)
 
-    private val ethDeposit: Job
-
     init {
-        registrationTestEnvironment.registrationInitialization.init()
-        ethDeposit = GlobalScope.launch {
-            integrationHelper.runEthDeposit()
-        }
-        integrationHelper.runEthNotificationRmqConsumer()
+        ethIntegrationTestEnvironment.init()
     }
 
     lateinit var clientName: String
@@ -76,8 +72,7 @@ class WalletWithdrawalPipelineIntegrationTest {
 
     @AfterAll
     fun dropDown() {
-        registrationTestEnvironment.close()
-        ethDeposit.cancel()
+        ethIntegrationTestEnvironment.close()
     }
 
     private fun registerClient() {

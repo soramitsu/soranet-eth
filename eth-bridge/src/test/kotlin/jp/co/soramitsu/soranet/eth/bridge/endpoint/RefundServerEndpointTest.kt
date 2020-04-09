@@ -11,6 +11,7 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.squareup.moshi.Moshi
 import io.ktor.http.HttpStatusCode
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -45,6 +46,11 @@ class RefundServerEndpointTest {
 
     private val server =
         EthServerEndpoint(serverBundle, ethAddPeerStrategyMock)
+
+    @AfterAll
+    fun tearDown() {
+        server.close()
+    }
 
     /**
      * @given initialized server class

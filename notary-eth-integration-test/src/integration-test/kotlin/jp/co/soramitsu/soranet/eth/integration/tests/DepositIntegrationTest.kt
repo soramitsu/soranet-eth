@@ -9,13 +9,9 @@ import com.d3.commons.util.getRandomString
 import com.d3.commons.util.toHexString
 import integration.helper.D3_DOMAIN
 import integration.helper.IrohaConfigHelper
-import integration.registration.RegistrationServiceTestEnvironment
 import jp.co.soramitsu.crypto.ed25519.Ed25519Sha3
-import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationHelperUtil
+import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationTestEnvironment
 import jp.co.soramitsu.soranet.eth.provider.ETH_PRECISION
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
@@ -33,26 +29,19 @@ import java.time.Duration
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class DepositIntegrationTest {
+    private val ethIntegrationTestEnvironment = EthIntegrationTestEnvironment
     /** Utility functions for integration tests */
-    private val integrationHelper = EthIntegrationHelperUtil
+    private val integrationHelper = ethIntegrationTestEnvironment.integrationHelper
+    private val registrationTestEnvironment = ethIntegrationTestEnvironment.registrationTestEnvironment
 
     /** Ethereum assetId in Iroha */
     private val etherAssetId = "ether#ethereum"
 
-    private val registrationTestEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
-
-    private val ethDeposit: Job
+    private val timeoutDuration = Duration.ofMinutes(IrohaConfigHelper.timeoutMinutes)
 
     init {
-        // run notary
-        ethDeposit = GlobalScope.launch {
-            integrationHelper.runEthDeposit()
-        }
-        registrationTestEnvironment.registrationInitialization.init()
-        Thread.sleep(5_000)
+        ethIntegrationTestEnvironment.init()
     }
-
-    private val timeoutDuration = Duration.ofMinutes(IrohaConfigHelper.timeoutMinutes)
 
     private fun registerClient(accountName: String, keypair: KeyPair, ecKeyPair: ECKeyPair) {
         // register client in Iroha
@@ -69,7 +58,7 @@ class DepositIntegrationTest {
 
     @AfterAll
     fun dropDown() {
-        ethDeposit.cancel()
+        ethIntegrationTestEnvironment.close()
     }
 
     /**
@@ -101,9 +90,7 @@ class DepositIntegrationTest {
             val initialAmount = integrationHelper.getIrohaAccountBalance(clientIrohaAccountId, etherAssetId)
             val amount = BigInteger.valueOf(1_234_000_000_000)
             // send ETH
-            integrationHelper.purgeAndwaitOneIrohaBlock {
-                integrationHelper.sendEth(amount.multiply(BigInteger.TWO), ethAddress)
-            }
+            integrationHelper.sendEth(amount.multiply(BigInteger.TWO), ethAddress)
             integrationHelper.purgeAndwaitOneIrohaBlock {
                 integrationHelper.sendEth(
                     amount,
@@ -111,7 +98,8 @@ class DepositIntegrationTest {
                     Credentials.create(ethKeyPair)
                 )
             }
-            Thread.sleep(3_000)
+            
+            Thread.sleep(2_000)
 
             Assertions.assertEquals(
                 BigDecimal(amount, ETH_PRECISION).add(BigDecimal(initialAmount)),
@@ -155,14 +143,8 @@ class DepositIntegrationTest {
             val initialAmount = integrationHelper.getIrohaAccountBalance(clientIrohaAccountId, assetId)
             val amount = BigInteger.valueOf(1_234_000_000_000)
 
-            // send ERC20
-            integrationHelper.purgeAndwaitOneIrohaBlock {
-                integrationHelper.sendERC20Token(tokenAddress, amount, ethAddress)
-            }
-            // Eth for gas
-            integrationHelper.purgeAndwaitOneIrohaBlock {
-                integrationHelper.sendEth(amount.multiply(BigInteger.TWO), ethAddress)
-            }
+            integrationHelper.sendERC20Token(tokenAddress, amount, ethAddress)
+            integrationHelper.sendEth(amount, ethAddress)
             integrationHelper.purgeAndwaitOneIrohaBlock {
                 integrationHelper.sendERC20Token(
                     tokenAddress,
@@ -171,7 +153,8 @@ class DepositIntegrationTest {
                     Credentials.create(ethKeyPair)
                 )
             }
-            Thread.sleep(7_000)
+
+            Thread.sleep(2_000)
 
             Assertions.assertEquals(
                 BigDecimal(amount, tokenInfo.precision).add(BigDecimal(initialAmount)),

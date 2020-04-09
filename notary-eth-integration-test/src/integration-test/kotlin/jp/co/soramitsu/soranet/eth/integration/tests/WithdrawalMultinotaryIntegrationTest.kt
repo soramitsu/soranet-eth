@@ -18,6 +18,7 @@ import jp.co.soramitsu.soranet.eth.bridge.endpoint.BigIntegerMoshiAdapter
 import jp.co.soramitsu.soranet.eth.bridge.endpoint.EthNotaryResponse
 import jp.co.soramitsu.soranet.eth.bridge.endpoint.EthNotaryResponseMoshiAdapter
 import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationHelperUtil
+import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationTestEnvironment
 import jp.co.soramitsu.soranet.eth.provider.ETH_PRECISION
 import jp.co.soramitsu.soranet.eth.provider.ETH_WALLET
 import jp.co.soramitsu.soranet.eth.provider.EthAddressProviderIrohaImpl
@@ -29,10 +30,7 @@ import khttp.get
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.*
 import org.web3j.crypto.ECKeyPair
 import org.web3j.crypto.Keys
 import java.math.BigDecimal
@@ -40,9 +38,12 @@ import java.math.BigInteger
 import java.time.Duration
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Disabled
 class WithdrawalMultinotaryIntegrationTest {
+    private val ethIntegrationTestEnvironment = EthIntegrationTestEnvironment
+
     /** Utility functions for integration tests */
-    private val integrationHelper = EthIntegrationHelperUtil
+    private val integrationHelper = ethIntegrationTestEnvironment.integrationHelper
 
     private val keyPair2 = ModelUtil.generateKeypair()
 
@@ -61,27 +62,20 @@ class WithdrawalMultinotaryIntegrationTest {
 
     private val timeoutDuration = Duration.ofMinutes(IrohaConfigHelper.timeoutMinutes)
 
-    private val registrationTestEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
-    private val ethDeposit1: Job
     private val ethDeposit2: Job
 
     init {
+        ethIntegrationTestEnvironment.init()
+        ethIntegrationTestEnvironment.refresh()
         val ethKeyPath = ethereumPasswords.credentialsPath
 
         // create 1st deposit config
-        depositConfig1 = integrationHelper.configHelper.createEthDepositConfig()
+        depositConfig1 = ethIntegrationTestEnvironment.ethDepositConfig
         val ethereumPasswordsConfig1 =
             integrationHelper.configHelper.createEthereumPasswords(ethKeyPath)
 
         // run 1st instance of deposit
         keypair1 = DeployHelper(depositConfig1.ethereum, ethereumPasswordsConfig1).credentials.ecKeyPair
-
-        ethDeposit1 = GlobalScope.launch {
-            integrationHelper.runEthDeposit(
-                ethereumPasswords = ethereumPasswordsConfig1,
-                ethDepositConfig = depositConfig1
-            )
-        }
 
         // create 2nd deposit config
         val ethereumPasswordsConfig2 = integrationHelper.configHelper
@@ -114,15 +108,12 @@ class WithdrawalMultinotaryIntegrationTest {
                 ethDepositConfig = depositConfig2
             )
         }
-
-        // run registration
-        registrationTestEnvironment.registrationInitialization.init()
     }
 
     @AfterAll
     fun dropDown() {
-        ethDeposit1.cancel()
         ethDeposit2.cancel()
+        ethIntegrationTestEnvironment.close()
     }
 
     /**
@@ -145,7 +136,7 @@ class WithdrawalMultinotaryIntegrationTest {
             // create
             val client = String.getRandomString(9)
             // register client in Iroha
-            val res = registrationTestEnvironment.register(
+            val res = ethIntegrationTestEnvironment.registrationTestEnvironment.register(
                 client,
                 ModelUtil.generateKeypair().public.toHexString()
             )

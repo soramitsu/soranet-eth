@@ -15,6 +15,7 @@ import integration.helper.IrohaConfigHelper
 import integration.registration.RegistrationServiceTestEnvironment
 import jp.co.soramitsu.soranet.eth.integration.helper.ContractTestHelper
 import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationHelperUtil
+import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationTestEnvironment
 import jp.co.soramitsu.soranet.eth.provider.ETH_WALLET
 import jp.co.soramitsu.soranet.eth.registration.wallet.ETH_FAILED_REGISTRATION_KEY
 import jp.co.soramitsu.soranet.eth.registration.wallet.ETH_REGISTRATION_KEY
@@ -32,18 +33,13 @@ import kotlin.test.assertTrue
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EthRegistrationProofIntegrationTest {
+    private val ethIntegrationTestEnvironment = EthIntegrationTestEnvironment
     private lateinit var cth: ContractTestHelper
-    private val integrationHelper = EthIntegrationHelperUtil
-    private val registrationTestEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
-    private val ethDeposit: Job
+    private val integrationHelper = ethIntegrationTestEnvironment.integrationHelper
+    private val registrationTestEnvironment = ethIntegrationTestEnvironment.registrationTestEnvironment
 
     init {
-        // run notary
-        ethDeposit = GlobalScope.launch {
-            integrationHelper.runEthDeposit()
-        }
-        registrationTestEnvironment.registrationInitialization.init()
-        Thread.sleep(10_000)
+        ethIntegrationTestEnvironment.init()
     }
 
     private val timeoutDuration = Duration.ofMinutes(IrohaConfigHelper.timeoutMinutes)
@@ -55,7 +51,7 @@ class EthRegistrationProofIntegrationTest {
 
     @AfterAll
     fun dropDown() {
-        ethDeposit.cancel()
+        ethIntegrationTestEnvironment.close()
     }
 
     /**

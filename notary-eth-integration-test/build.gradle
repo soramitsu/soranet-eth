@@ -37,8 +37,7 @@ task integrationTest(type: Test) {
     classpath = sourceSets.integrationTest.runtimeClasspath
     setWorkingDir("$rootDir/")
     // Enable JUnit5 tests
-    useJUnitPlatform() {
-    }
+    useJUnitPlatform()
 
     mustRunAfter test
 }

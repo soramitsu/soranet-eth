@@ -12,17 +12,13 @@ import com.d3.commons.util.hex
 import com.d3.commons.util.toHexString
 import integration.helper.D3_DOMAIN
 import integration.helper.IrohaConfigHelper
-import integration.registration.RegistrationServiceTestEnvironment
 import jp.co.soramitsu.soranet.eth.config.loadEthPasswords
-import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationHelperUtil
+import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationTestEnvironment
 import jp.co.soramitsu.soranet.eth.provider.ETH_PRECISION
 import jp.co.soramitsu.soranet.eth.sidechain.util.DeployHelper
 import jp.co.soramitsu.soranet.eth.sidechain.util.DeployHelperBuilder
 import kotlinx.coroutines.*
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.*
 import org.web3j.crypto.Credentials
 import org.web3j.crypto.Keys
 import java.math.BigDecimal
@@ -33,30 +29,24 @@ import java.time.Duration
  * Integration tests with multiple notaries for deposit case.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Disabled
 class DepositMultiIntegrationTest {
+    private val ethIntegrationTestEnvironment = EthIntegrationTestEnvironment
     /** Utility functions for integration tests */
-    private val integrationHelper = EthIntegrationHelperUtil
+    private val integrationHelper = ethIntegrationTestEnvironment.integrationHelper
     private val keyPair2 = ModelUtil.generateKeypair()
 
     /** Ethereum assetId in Iroha */
     private val etherAssetId = "ether#ethereum"
 
-    private val registrationTestEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
-    private val ethDeposit1: Job
+    private val registrationTestEnvironment = ethIntegrationTestEnvironment.registrationTestEnvironment
     private val ethDeposit2: Job
 
     val ethereumPasswords = loadEthPasswords("test", "/eth/ethereum_password.properties").get()
 
     init {
-        // run notary
-        ethDeposit1 = GlobalScope.launch {
-            integrationHelper.runEthDeposit(
-                ethDepositConfig = integrationHelper.configHelper.createEthDepositConfig(),
-                registrationConfig = integrationHelper.configHelper.createEthRegistrationConfig()
-            )
-        }
-        registrationTestEnvironment.registrationInitialization.init()
-
+        ethIntegrationTestEnvironment.init()
+        ethIntegrationTestEnvironment.refresh()
         // create 2nd notary config
         val irohaCredential = object : IrohaCredentialRawConfig {
             override val pubkey = String.hex(keyPair2.public.encoded).toLowerCase()
@@ -72,8 +62,6 @@ class DepositMultiIntegrationTest {
                 notaryCredential_ = irohaCredential
             )
 
-        // wait for deposit service
-        Thread.sleep(5_000)
         val notary2IrohaPublicKey = keyPair2.public.toHexString()
         val notary2EthereumCredentials =
             DeployHelper(depositConfig.ethereum, ethereumPasswords).credentials
@@ -136,8 +124,8 @@ class DepositMultiIntegrationTest {
 
     @AfterAll
     fun dropDown() {
-        ethDeposit1.cancel()
         ethDeposit2.cancel()
+        ethIntegrationTestEnvironment.close()
     }
 
     /**

@@ -10,6 +10,7 @@ import com.d3.commons.util.toHexString
 import integration.registration.RegistrationServiceTestEnvironment
 import jp.co.soramitsu.crypto.ed25519.Ed25519Sha3
 import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationHelperUtil
+import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationTestEnvironment
 import kotlinx.coroutines.*
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
@@ -20,26 +21,20 @@ import kotlin.test.assertEquals
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EthRegistrationTest {
+    private val ethIntegrationTestEnvironment = EthIntegrationTestEnvironment
 
     /** Integration tests util */
-    private val integrationHelper = EthIntegrationHelperUtil
+    private val integrationHelper = ethIntegrationTestEnvironment.integrationHelper
 
-    private val registrationServiceEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
-
-    private val ethDeposit: Job
+    private val registrationServiceEnvironment = ethIntegrationTestEnvironment.registrationTestEnvironment
 
     init {
-        ethDeposit = GlobalScope.launch {
-            integrationHelper.runEthDeposit()
-        }
-        registrationServiceEnvironment.registrationInitialization.init()
-        runBlocking { delay(5_000) }
+        ethIntegrationTestEnvironment.init()
     }
 
     @AfterAll
     fun dropDown() {
-        ethDeposit.cancel()
-        registrationServiceEnvironment.close()
+        ethIntegrationTestEnvironment.close()
     }
 
     /**

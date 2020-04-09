@@ -12,6 +12,7 @@ import integration.helper.IrohaConfigHelper
 import integration.registration.RegistrationServiceTestEnvironment
 import jp.co.soramitsu.crypto.ed25519.Ed25519Sha3
 import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationHelperUtil
+import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationTestEnvironment
 import jp.co.soramitsu.soranet.eth.provider.ETH_WALLET
 import jp.co.soramitsu.soranet.eth.provider.EthAddressProviderIrohaImpl
 import kotlinx.coroutines.GlobalScope
@@ -31,8 +32,9 @@ import java.time.Duration
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EthAddressProviderIrohaTest {
+    private val ethIntegrationTestEnvironment = EthIntegrationTestEnvironment
 
-    val integrationHelper = EthIntegrationHelperUtil
+    val integrationHelper = ethIntegrationTestEnvironment.integrationHelper
 
     /** Iroha account that holds details */
     private val relayStorage = integrationHelper.accountHelper.ethereumWalletStorageAccount.accountId
@@ -42,21 +44,13 @@ class EthAddressProviderIrohaTest {
 
     private val timeoutDuration = Duration.ofMinutes(IrohaConfigHelper.timeoutMinutes)
 
-    private val registrationTestEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
-
-    private val ethDeposit: Job
-
     init {
-        ethDeposit = GlobalScope.launch {
-            integrationHelper.runEthDeposit()
-        }
-        registrationTestEnvironment.registrationInitialization.init()
-        Thread.sleep(5_000)
+        ethIntegrationTestEnvironment.init()
     }
 
     @AfterAll
     fun dropDown() {
-        ethDeposit.cancel()
+        ethIntegrationTestEnvironment.close()
     }
 
     /**
@@ -78,7 +72,7 @@ class EthAddressProviderIrohaTest {
             val clientIrohaAccount = String.getRandomString(9)
             val irohaKeyPair = Ed25519Sha3().generateKeypair()
             val ethKeyPair = Keys.createEcKeyPair()
-            val res = registrationTestEnvironment.register(
+            val res = ethIntegrationTestEnvironment.registrationTestEnvironment.register(
                 clientIrohaAccount,
                 irohaKeyPair.public.toHexString()
             )
@@ -90,7 +84,7 @@ class EthAddressProviderIrohaTest {
                 ethKeyPair
             )
 
-            Thread.sleep(5_000)
+            Thread.sleep(8_000)
 
             ethAddressProviderIrohaImpl.getAddresses()
                 .fold(

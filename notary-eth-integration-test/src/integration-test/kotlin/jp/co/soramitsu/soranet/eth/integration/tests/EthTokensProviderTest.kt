@@ -9,6 +9,7 @@ import com.d3.commons.util.getRandomString
 import com.github.kittinunf.result.success
 import integration.helper.IrohaConfigHelper
 import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationHelperUtil
+import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationTestEnvironment
 import jp.co.soramitsu.soranet.eth.provider.ETH_ADDRESS
 import jp.co.soramitsu.soranet.eth.provider.ETH_DOMAIN
 import jp.co.soramitsu.soranet.eth.provider.ETH_NAME
@@ -26,11 +27,22 @@ import java.time.Duration
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EthTokensProviderTest {
-    private val integrationHelper = EthIntegrationHelperUtil
+    private val ethIntegrationTestEnvironment = EthIntegrationTestEnvironment
+
+    private val integrationHelper = ethIntegrationTestEnvironment.integrationHelper
 
     private val ethTokensProvider = integrationHelper.ethTokensProvider
 
     private val timeoutDuration = Duration.ofMinutes(IrohaConfigHelper.timeoutMinutes)
+
+    init {
+        ethIntegrationTestEnvironment.init()
+    }
+
+    @AfterAll
+    fun dropDown() {
+        ethIntegrationTestEnvironment.close()
+    }
 
     /**
      * Test US-001 Listing all the tokens from tokensProvider

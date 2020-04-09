@@ -19,8 +19,11 @@ import io.ktor.routing.get
 import io.ktor.routing.routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import io.ktor.server.netty.NettyApplicationEngine
 import mu.KLogging
+import java.io.Closeable
 import java.math.BigInteger
+import java.util.concurrent.TimeUnit
 
 data class Response(val code: HttpStatusCode, val message: String)
 
@@ -30,18 +33,19 @@ data class Response(val code: HttpStatusCode, val message: String)
 class EthServerEndpoint(
     private val serverBundle: ServerInitializationBundle,
     private val addPeerStrategy: EthAddPeerStrategy
-) {
+): Closeable {
     private val moshi = Moshi
         .Builder()
         .add(EthNotaryResponseMoshiAdapter())
         .add(BigInteger::class.java, BigIntegerMoshiAdapter())
         .build()!!
     private val ethNotaryAdapter = moshi.adapter(EthNotaryResponse::class.java)!!
+    private val server: NettyApplicationEngine
 
     init {
         logger.info { "Start refund server on port ${serverBundle.port}" }
 
-        val server = embeddedServer(Netty, port = serverBundle.port) {
+        server = embeddedServer(Netty, port = serverBundle.port) {
             install(CORS)
             {
                 anyHost()
@@ -100,6 +104,10 @@ class EthServerEndpoint(
     private fun onErrorPipelineCall(): Response {
         logger.error { "Request has been failed" }
         return Response(HttpStatusCode.BadRequest, "Request has been failed. Error in URL")
+    }
+
+    override fun close() {
+        server.stop(1, 1, TimeUnit.SECONDS)
     }
 
     /**
