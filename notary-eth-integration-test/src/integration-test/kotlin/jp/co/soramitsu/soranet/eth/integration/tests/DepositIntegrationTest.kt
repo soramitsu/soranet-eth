@@ -90,7 +90,7 @@ class DepositIntegrationTest {
             val initialAmount = integrationHelper.getIrohaAccountBalance(clientIrohaAccountId, etherAssetId)
             val amount = BigInteger.valueOf(1_234_000_000_000)
             // send ETH
-            integrationHelper.sendEth(amount, ethAddress)
+            integrationHelper.sendEth(amount.multiply(BigInteger.valueOf(5)), ethAddress)
             integrationHelper.purgeAndwaitOneIrohaBlock {
                 integrationHelper.sendEth(
                     amount,
