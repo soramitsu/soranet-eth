@@ -101,6 +101,7 @@ class EthTokensProviderImpl(
             Result.of { tokenPrecisions[assetId]!! }
         else irohaQueryHelper.getAssetPrecision(assetId).map { precision ->
             tokenPrecisions[assetId] = precision
+            logger.info("Got new token precision from Iroha: $assetId : $precision")
             precision
         }
     }
@@ -161,11 +162,13 @@ class EthTokensProviderImpl(
         map[ethAnchoredTokenSetterAccount]?.forEach {
             if(it.accountId == ethAnchoredTokenStorageAccount) {
                 ethAnchoredTokens[it.key] = it.value
+                logger.info("Got new token from Iroha: ${it.key} : ${it.value}")
             }
         }
         map[irohaAnchoredTokenSetterAccount]?.forEach {
             if(it.accountId == irohaAnchoredTokenStorageAccount) {
                 irohaAnchoredTokens[it.key] = it.value
+                logger.info("Got new token from Iroha: ${it.key} : ${it.value}")
             }
         }
     }
