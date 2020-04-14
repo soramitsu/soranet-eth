@@ -237,7 +237,6 @@ object EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
         ).success {
             logger.info { "token ${tokenInfo.name}#${tokenInfo.domain} was added to ${accountHelper.ethAnchoredTokenStorageAccount.accountId} by ${tokenProviderIrohaConsumer.creator}" }
         }
-        Thread.sleep(500)
     }
 
     /**
