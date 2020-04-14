@@ -31,17 +31,14 @@ class EthAddressProviderIrohaImpl(
 
     private val registeredAddresses: MutableMap<String, String>
 
-    private val anyAddressPredicate = { _: String, _: String -> true }
-
     init {
         logger.info {
             "Init address provider with storage account '$storageAccountId' and setter account '$setterAccountId'"
         }
         registeredAddresses = ConcurrentHashMap(
-            queryHelper.getAccountDetailsFilter(
+            queryHelper.getAccountDetails(
                 storageAccountId,
-                setterAccountId,
-                anyAddressPredicate
+                setterAccountId
             ).get()
         )
     }
@@ -82,6 +79,7 @@ class EthAddressProviderIrohaImpl(
 
     override fun addNewAddress(wallet: String, irohaAccountId: String) {
         registeredAddresses[wallet] = irohaAccountId
+        logger.info("Added new eth address to the storage: $wallet : $irohaAccountId")
     }
 
     /**
