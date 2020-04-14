@@ -11,11 +11,8 @@ import integration.helper.D3_DOMAIN
 import integration.helper.IrohaConfigHelper
 import jp.co.soramitsu.crypto.ed25519.Ed25519Sha3
 import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationTestEnvironment
-import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.fail
 import org.web3j.crypto.Keys
 import org.web3j.utils.Numeric
 import java.time.Duration
@@ -86,6 +83,8 @@ class EthAddressProviderIrohaTest {
      * @then empty map is returned
      */
     @Test
+    // We cannot predict the state of Iroha for now
+    @Disabled
     fun testEmptyStorage() {
         assertTimeoutPreemptively(timeoutDuration) {
             integrationHelper.nameCurrentThread(this::class.simpleName!!)
