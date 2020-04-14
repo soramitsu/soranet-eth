@@ -227,8 +227,7 @@ class EthChainHandler(
         }
         return addresses.fanout { tokens }
             .fold(
-                { (addresses, tokens) ->
-                    val wallets = addresses
+                { (wallets, tokens) ->
                     val (ethAnchoredTokens, irohaAnchoredTokens) = tokens
                     // Eth time in seconds, convert ot milliseconds
                     val time = block.block.timestamp.multiply(thousand)

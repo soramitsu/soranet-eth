@@ -74,8 +74,8 @@ class EthereumWalletRegistrationHandler(
                                     clientId,
                                     time
                                 ) { clientId }.get()
+                                ethWalletProvider.addNewAddress(ethAddress, clientId)
                                 logger.info { "Registration request with Ethereum wallet $ethAddress triggered for $clientId submitted with tx $registrationTxHash" }
-
                             } else {
                                 throw IllegalArgumentException("Registration triggered with wrong proof for ${setAccountDetail.accountId} with wallet $ethAddress")
                             }
