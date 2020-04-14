@@ -9,15 +9,8 @@ import com.d3.commons.util.getRandomString
 import com.d3.commons.util.toHexString
 import integration.helper.D3_DOMAIN
 import integration.helper.IrohaConfigHelper
-import integration.registration.RegistrationServiceTestEnvironment
 import jp.co.soramitsu.crypto.ed25519.Ed25519Sha3
-import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationHelperUtil
 import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationTestEnvironment
-import jp.co.soramitsu.soranet.eth.provider.ETH_WALLET
-import jp.co.soramitsu.soranet.eth.provider.EthAddressProviderIrohaImpl
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
@@ -35,12 +28,6 @@ class EthAddressProviderIrohaTest {
     private val ethIntegrationTestEnvironment = EthIntegrationTestEnvironment
 
     val integrationHelper = ethIntegrationTestEnvironment.integrationHelper
-
-    /** Iroha account that holds details */
-    private val relayStorage = integrationHelper.accountHelper.ethereumWalletStorageAccount.accountId
-
-    /** Iroha account that has set details */
-    private val relaySetter = integrationHelper.accountHelper.notaryAccount.accountId
 
     private val timeoutDuration = Duration.ofMinutes(IrohaConfigHelper.timeoutMinutes)
 
@@ -63,12 +50,6 @@ class EthAddressProviderIrohaTest {
         assertTimeoutPreemptively(timeoutDuration) {
             integrationHelper.nameCurrentThread(this::class.simpleName!!)
 
-            val ethAddressProviderIrohaImpl = EthAddressProviderIrohaImpl(
-                integrationHelper.queryHelper,
-                relayStorage,
-                relaySetter,
-                ETH_WALLET
-            )
             val clientIrohaAccount = String.getRandomString(9)
             val irohaKeyPair = Ed25519Sha3().generateKeypair()
             val ethKeyPair = Keys.createEcKeyPair()
@@ -84,9 +65,9 @@ class EthAddressProviderIrohaTest {
                 ethKeyPair
             )
 
-            Thread.sleep(8_000)
+            Thread.sleep(3_000)
 
-            ethAddressProviderIrohaImpl.getAddresses()
+            integrationHelper.ethWalletsProvider().getAddresses()
                 .fold(
                     {
                         assertTrue(it.entries.any {
@@ -108,12 +89,7 @@ class EthAddressProviderIrohaTest {
     fun testEmptyStorage() {
         assertTimeoutPreemptively(timeoutDuration) {
             integrationHelper.nameCurrentThread(this::class.simpleName!!)
-            EthAddressProviderIrohaImpl(
-                integrationHelper.queryHelper,
-                integrationHelper.testCredential.accountId,
-                relaySetter,
-                ETH_WALLET
-            ).getAddresses()
+            integrationHelper.ethWalletsProvider().getAddresses()
                 .fold(
                     { assert(it.isEmpty()) },
                     { ex -> fail("result has exception", ex) }
@@ -123,12 +99,7 @@ class EthAddressProviderIrohaTest {
 
     @Test
     fun testGetByAccountNotFound() {
-        val res = EthAddressProviderIrohaImpl(
-            integrationHelper.queryHelper,
-            integrationHelper.testCredential.accountId,
-            relaySetter,
-            ETH_WALLET
-        ).getAddressByAccountId("nonexist@domain")
+        val res = integrationHelper.ethWalletsProvider().getAddressByAccountId("nonexist@domain")
         assertFalse(res.get().isPresent)
     }
 }
