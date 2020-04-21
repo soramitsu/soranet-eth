@@ -264,15 +264,17 @@ class EthDepositInitialization(
             if (toThrow == null && r is Future<*>) {
                 try {
                     r.get()
-                } catch (e: ExecutionException) {
-                    toThrow = e
-                } catch (e: InterruptedException) {
-                    toThrow = e
+                } catch (t: Throwable) {
+                    toThrow = t
                 }
             }
             // suppress cancellation exception
-            if (toThrow != null && toThrow !is CancellationException) {
-                throw toThrow
+            if (toThrow != null) {
+                if (toThrow is CancellationException) {
+                    logger.warn("Execution has been cancelled", toThrow)
+                } else {
+                    throw toThrow
+                }
             }
         }
     }
