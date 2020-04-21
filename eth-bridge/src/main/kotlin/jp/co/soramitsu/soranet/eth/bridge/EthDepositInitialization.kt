@@ -257,7 +257,7 @@ class EthDepositInitialization(
     }
 
     // TODO move to validator-commons
-    class UnwrappingExceptionsScheduledThreadPoolExecutor : ScheduledThreadPoolExecutor(
+    internal class UnwrappingExceptionsScheduledThreadPoolExecutor : ScheduledThreadPoolExecutor(
         Runtime.getRuntime().availableProcessors(),
         namedWithUnknownExceptionHandlingThreadFactory()
     ) {
