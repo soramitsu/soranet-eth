@@ -267,11 +267,7 @@ class EthDepositInitialization(
                 throw t
             }
             if (r is Future<*>) {
-                try {
-                    r.get()
-                } catch (t: Throwable) {
-                    throw t
-                }
+                r.get()
             }
         }
     }
