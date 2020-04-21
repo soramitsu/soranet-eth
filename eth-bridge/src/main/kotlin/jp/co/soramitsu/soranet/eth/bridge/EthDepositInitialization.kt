@@ -46,9 +46,12 @@ import org.web3j.utils.Files
 import java.io.File
 import java.math.BigInteger
 import java.util.concurrent.Executors
+import java.util.concurrent.Future
+import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.exitProcess
+
 
 /**
  * Class for deposit instantiation
@@ -179,10 +182,7 @@ class EthDepositInitialization(
         val builder = OkHttpClient().newBuilder()
         builder.authenticator(BasicAuthenticator(passwordsConfig))
 
-        val web3jExecutorService = Executors.newScheduledThreadPool(
-            Runtime.getRuntime().availableProcessors(),
-            namedWithUnknownExceptionHandlingThreadFactory()
-        )
+        val web3jExecutorService = UnwrappingExceptionsScheduledThreadPoolExecutor()
 
         val web3 = Web3j.build(
             HttpService(ethDepositConfig.ethereum.url, builder.build(), false),
@@ -242,26 +242,45 @@ class EthDepositInitialization(
     /**
      * Logger
      */
-    companion object : KLogging()
+    companion object : KLogging() {
+        private fun namedWithUnknownExceptionHandlingThreadFactory(): ThreadFactory {
+            return object : ThreadFactory {
+                private val threadCounter = AtomicInteger(0)
+                override fun newThread(runnable: Runnable): Thread {
+                    val thread = Executors.defaultThreadFactory().newThread(runnable)
+                    thread.name =
+                        "$ETH_DEPOSIT_SERVICE_NAME:web3j:th-${threadCounter.getAndIncrement()}:id-${thread.id}"
+                    thread.uncaughtExceptionHandler = CriticalUncaughtExceptionHandler
+                    return thread
+                }
+            }
+        }
+    }
 
     // TODO move to validator-commons
+    class UnwrappingExceptionsScheduledThreadPoolExecutor : ScheduledThreadPoolExecutor(
+        Runtime.getRuntime().availableProcessors(),
+        namedWithUnknownExceptionHandlingThreadFactory()
+    ) {
+        override fun afterExecute(r: Runnable?, t: Throwable?) {
+            super.afterExecute(r, t)
+            if (t != null) {
+                throw t
+            }
+            if (r is Future<*>) {
+                try {
+                    r.get()
+                } catch (t: Throwable) {
+                    throw t
+                }
+            }
+        }
+    }
+
     internal object CriticalUncaughtExceptionHandler : Thread.UncaughtExceptionHandler {
         override fun uncaughtException(thread: Thread, t: Throwable) {
             logger.error("Encountered error in critical thread pool", t)
             exitProcess(1)
-        }
-    }
-
-    private fun namedWithUnknownExceptionHandlingThreadFactory(): ThreadFactory {
-        return object : ThreadFactory {
-            private val threadCounter = AtomicInteger(0)
-            override fun newThread(runnable: Runnable): Thread {
-                val thread = Executors.defaultThreadFactory().newThread(runnable)
-                thread.name =
-                    "$ETH_DEPOSIT_SERVICE_NAME:web3j:th-${threadCounter.getAndIncrement()}:id-${thread.id}"
-                thread.uncaughtExceptionHandler = CriticalUncaughtExceptionHandler
-                return thread
-            }
         }
     }
 }
