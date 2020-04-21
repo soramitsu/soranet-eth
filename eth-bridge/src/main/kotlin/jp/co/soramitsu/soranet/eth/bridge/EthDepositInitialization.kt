@@ -263,7 +263,9 @@ class EthDepositInitialization(
             var toThrow = t
             if (toThrow == null && r is Future<*>) {
                 try {
-                    r.get()
+                    if (r.isDone) {
+                        r.get()
+                    }
                 } catch (t: Throwable) {
                     toThrow = t
                 }
