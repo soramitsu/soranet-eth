@@ -45,10 +45,7 @@ import org.web3j.protocol.http.HttpService
 import org.web3j.utils.Files
 import java.io.File
 import java.math.BigInteger
-import java.util.concurrent.Executors
-import java.util.concurrent.Future
-import java.util.concurrent.ScheduledThreadPoolExecutor
-import java.util.concurrent.ThreadFactory
+import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.exitProcess
 
@@ -267,7 +264,14 @@ class EthDepositInitialization(
                 throw t
             }
             if (r is Future<*>) {
-                r.get()
+                try {
+                    r.get()
+                    // suppress cancellation exception
+                } catch (e: ExecutionException) {
+                    throw e
+                } catch (e: InterruptedException) {
+                    throw e
+                }
             }
         }
     }
