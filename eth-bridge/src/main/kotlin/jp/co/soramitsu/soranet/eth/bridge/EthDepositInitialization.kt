@@ -52,7 +52,6 @@ import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.exitProcess
 
-
 /**
  * Class for deposit instantiation
  * @param ethWalletProvider - provides with white list of ethereum wallets
