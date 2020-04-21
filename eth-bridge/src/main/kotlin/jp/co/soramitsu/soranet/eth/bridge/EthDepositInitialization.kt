@@ -262,12 +262,12 @@ class EthDepositInitialization(
             super.afterExecute(r, t)
             var toThrow = t
             if (toThrow == null && r is Future<*>) {
-                try {
-                    if (r.isDone) {
+                if (r.isDone) {
+                    try {
                         r.get()
+                    } catch (t: Throwable) {
+                        toThrow = t
                     }
-                } catch (t: Throwable) {
-                    toThrow = t
                 }
             }
             // suppress cancellation exception
