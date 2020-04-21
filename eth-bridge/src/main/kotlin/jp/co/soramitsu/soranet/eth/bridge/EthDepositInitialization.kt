@@ -260,18 +260,19 @@ class EthDepositInitialization(
     ) {
         override fun afterExecute(r: Runnable?, t: Throwable?) {
             super.afterExecute(r, t)
-            if (t != null) {
-                throw t
-            }
-            if (r is Future<*>) {
+            var toThrow = t
+            if (toThrow == null && r is Future<*>) {
                 try {
                     r.get()
-                    // suppress cancellation exception
                 } catch (e: ExecutionException) {
-                    throw e
+                    toThrow = e
                 } catch (e: InterruptedException) {
-                    throw e
+                    toThrow = e
                 }
+            }
+            // suppress cancellation exception
+            if (toThrow != null && toThrow !is CancellationException) {
+                throw toThrow
             }
         }
     }
