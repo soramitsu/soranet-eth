@@ -5,16 +5,14 @@
 
 package jp.co.soramitsu.soranet.eth.integration.tests
 
-import integration.helper.IrohaConfigHelper
 import jp.co.soramitsu.soranet.eth.bridge.XOR_LIMITS_TIME_KEY
 import jp.co.soramitsu.soranet.eth.bridge.XOR_LIMITS_VALUE_KEY
 import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationTestEnvironment
 import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.math.BigInteger
-import java.time.Duration
 import kotlin.test.assertTrue
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -22,11 +20,10 @@ class XorWithdrawalLimitsIntegrationTest {
     private val ethIntegrationTestEnvironment = EthIntegrationTestEnvironment
     private val integrationHelper = ethIntegrationTestEnvironment.integrationHelper
 
-    init {
+    @BeforeAll
+    fun init() {
         ethIntegrationTestEnvironment.init()
     }
-
-    private val timeoutDuration = Duration.ofMinutes(IrohaConfigHelper.timeoutMinutes)
 
     @AfterAll
     fun dropDown() {
@@ -40,28 +37,25 @@ class XorWithdrawalLimitsIntegrationTest {
      */
     @Test
     fun correctXorWithdrawalLimitsUpdate() {
-        Assertions.assertTimeoutPreemptively(timeoutDuration) {
-            // generate an eth block
-            integrationHelper.sendERC20Token(
-                integrationHelper.contractTestHelper.xorAddress,
-                BigInteger.TEN,
-                integrationHelper.contractTestHelper.etherAddress
-            )
-            Thread.sleep(5000)
-            assertTrue(
-                integrationHelper.queryHelper.getAccountDetails(
-                    integrationHelper.accountHelper.xorLimitsStorageAccount.accountId,
-                    integrationHelper.accountHelper.withdrawalAccount.accountId,
-                    XOR_LIMITS_VALUE_KEY
-                ).get().isPresent
-            )
-            val toLong = integrationHelper.queryHelper.getAccountDetails(
+        // generate an eth block
+        integrationHelper.sendEth(
+            BigInteger("200000000000"),
+            integrationHelper.contractTestHelper.xorAddress
+        )
+        Thread.sleep(5000)
+        assertTrue(
+            integrationHelper.queryHelper.getAccountDetails(
                 integrationHelper.accountHelper.xorLimitsStorageAccount.accountId,
                 integrationHelper.accountHelper.withdrawalAccount.accountId,
-                XOR_LIMITS_TIME_KEY
-            ).get().get().toLong()
-            assertTrue(toLong > 0)
-            assertTrue(toLong < System.currentTimeMillis())
-        }
+                XOR_LIMITS_VALUE_KEY
+            ).get().isPresent
+        )
+        val toLong = integrationHelper.queryHelper.getAccountDetails(
+            integrationHelper.accountHelper.xorLimitsStorageAccount.accountId,
+            integrationHelper.accountHelper.withdrawalAccount.accountId,
+            XOR_LIMITS_TIME_KEY
+        ).get().get().toLong()
+        assertTrue(toLong > 0)
+        assertTrue(toLong < System.currentTimeMillis())
     }
 }
