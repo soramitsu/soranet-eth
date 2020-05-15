@@ -25,4 +25,6 @@ class EthereumAccountHelper(irohaApi: IrohaAPI) : IrohaAccountHelper(irohaApi) {
     /** list of registered ethereum wallets */
     val ethereumWalletStorageAccount = createTesterAccount("ethereum_wallets")
 
+    /** XOR limits storage account **/
+    val xorLimitsStorageAccount = createTesterAccount("xor_limits")
 }

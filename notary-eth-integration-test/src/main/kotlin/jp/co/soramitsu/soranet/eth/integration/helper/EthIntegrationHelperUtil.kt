@@ -67,7 +67,7 @@ object EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
         loadConfigs("test", TestEthereumConfig::class.java, "/test.properties").get()
 
     /** Ethereum utils */
-    private val contractTestHelper = ContractTestHelper()
+    val contractTestHelper = ContractTestHelper
 
     override val accountHelper = EthereumAccountHelper(irohaAPI)
 

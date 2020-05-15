@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
 object EthIntegrationTestEnvironment : Closeable {
-    private const val classesCount = 7
+    private const val classesCount = 8
     private val isInitialized = AtomicBoolean()
     private val classesExecuted = AtomicInteger()
     val integrationHelper = EthIntegrationHelperUtil
@@ -60,5 +60,9 @@ object EthIntegrationTestEnvironment : Closeable {
         }
     }
 
-    private fun getNewEthDepositConfig() = EthIntegrationHelperUtil.configHelper.createEthDepositConfig()
+    private fun getNewEthDepositConfig() =
+        EthIntegrationHelperUtil.configHelper.createEthDepositConfig(
+            xorTokenAddress = integrationHelper.contractTestHelper.xorAddress,
+            xorExchangeContractAddress = integrationHelper.masterContract.contractAddress
+        )
 }
