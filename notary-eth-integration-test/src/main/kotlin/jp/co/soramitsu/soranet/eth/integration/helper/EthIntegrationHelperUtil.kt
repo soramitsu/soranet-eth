@@ -13,7 +13,7 @@ import com.d3.commons.expansion.ExpansionUtils
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.util.ModelUtil
-import com.d3.commons.sidechain.provider.FileBasedLastReadBlockProvider
+import com.d3.commons.sidechain.provider.LastReadBlockProvider
 import com.d3.commons.util.GsonInstance
 import com.d3.commons.util.getRandomString
 import com.d3.commons.util.irohaEscape
@@ -41,8 +41,12 @@ import jp.co.soramitsu.soranet.eth.registration.EthRegistrationConfig
 import jp.co.soramitsu.soranet.eth.registration.wallet.ETH_REGISTRATION_KEY
 import jp.co.soramitsu.soranet.eth.registration.wallet.createRegistrationProof
 import jp.co.soramitsu.soranet.eth.sidechain.EthChainListener
+import jp.co.soramitsu.soranet.eth.sidechain.util.DeployHelper
 import jp.co.soramitsu.soranet.eth.token.EthTokenInfo
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.json.JSONObject
 import org.web3j.crypto.Credentials
 import org.web3j.crypto.ECKeyPair
@@ -89,6 +93,14 @@ object EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
         contract
     }
 
+    val xorAddress by lazy {
+        val address = contractTestHelper.master.xorTokenInstance().send()
+        masterContract.addToken(address).send()
+        addIrohaAnchoredERC20Token(address, EthTokenInfo("xor", "sora", 18))
+        DeployHelper.logger.info("Deployed XOR contract: $address")
+        address
+    }
+
     override val configHelper = EthConfigHelper(
         accountHelper,
         masterContract.contractAddress
@@ -97,15 +109,6 @@ object EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
     var ethDepositConfig: EthDepositConfig = configHelper.createEthDepositConfig()
 
     val ethRegistrationConfig by lazy { configHelper.createEthRegistrationConfig() }
-
-    val ethListener = EthChainListener(
-        contractTestHelper.deployHelper.web3,
-        BigInteger.valueOf(ethTestConfig.ethereum.confirmationPeriod),
-        BigInteger.ZERO,
-        FileBasedLastReadBlockProvider(configHelper.lastEthereumReadBlockFilePath),
-        false,
-        AtomicBoolean(true)
-    )
 
     /** Provider that is used to store/fetch tokens*/
     fun ethTokensProvider() = EthTokensProviderImpl(
@@ -277,10 +280,31 @@ object EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
     /**
      * Waits for exactly one Ethereum block
      */
-    fun waitOneEtherBlock() {
+    fun waitOneEtherBlock(action: () -> Unit = {}) {
         runBlocking {
-            logger.info { "Waiting for Ethereum block. Last block ${ethListener.lastBlockNumber}" }
-            val block = ethListener.getBlock()
+            val listener = EthChainListener(
+                contractTestHelper.deployHelper.web3,
+                BigInteger.valueOf(ethTestConfig.ethereum.confirmationPeriod),
+                BigInteger.ZERO,
+                object : LastReadBlockProvider {
+                    override fun getLastBlockHeight(): BigInteger {
+                        return BigInteger.ZERO
+                    }
+
+                    override fun saveLastBlockHeight(height: BigInteger) {
+
+                    }
+
+                },
+                true,
+                AtomicBoolean(true)
+            )
+            logger.info { "Waiting for Ethereum block." }
+            val launch = GlobalScope.launch {
+                withTimeout(100) { action() }
+            }
+            val block = listener.getBlock()
+            launch.cancel()
             logger.info { "Waiting for Ethereum block ${block.block.number} is over." }
         }
     }

@@ -88,7 +88,9 @@ class WithdrawalLimitProvider(
         )
     }
 
-    fun getXorExchangeLiquidity(): BigInteger = soraTokenContract.balanceOf(xorExchangeAddress).send()
+    fun getXorExchangeLiquidity(): BigInteger {
+        return soraTokenContract.balanceOf(xorExchangeAddress).send()
+    }
 
     companion object : KLogging() {
         const val XOR_PRECISION = 18

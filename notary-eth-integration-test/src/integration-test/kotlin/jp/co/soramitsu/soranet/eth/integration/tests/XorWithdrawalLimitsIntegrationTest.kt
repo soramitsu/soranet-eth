@@ -5,6 +5,8 @@
 
 package jp.co.soramitsu.soranet.eth.integration.tests
 
+import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
+import com.d3.commons.sidechain.iroha.util.ModelUtil
 import jp.co.soramitsu.soranet.eth.bridge.XOR_LIMITS_TIME_KEY
 import jp.co.soramitsu.soranet.eth.bridge.XOR_LIMITS_VALUE_KEY
 import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationTestEnvironment
@@ -37,12 +39,22 @@ class XorWithdrawalLimitsIntegrationTest {
      */
     @Test
     fun correctXorWithdrawalLimitsUpdate() {
-        // generate an eth block
+        // generate xor supply to the contract address
         integrationHelper.sendEth(
-            BigInteger("200000000000"),
-            integrationHelper.contractTestHelper.xorAddress
+            BigInteger("20000"),
+            integrationHelper.masterContract.contractAddress
+        )
+        ModelUtil.setAccountDetail(
+            IrohaConsumerImpl(integrationHelper.accountHelper.withdrawalAccount, integrationHelper.irohaAPI),
+            integrationHelper.accountHelper.xorLimitsStorageAccount.accountId,
+            XOR_LIMITS_TIME_KEY,
+            (System.currentTimeMillis() - 10000).toString()
         )
         Thread.sleep(5000)
+        integrationHelper.waitOneEtherBlock {
+            integrationHelper.deployRandomERC20Token()
+        }
+        Thread.sleep(3000)
         assertTrue(
             integrationHelper.queryHelper.getAccountDetails(
                 integrationHelper.accountHelper.xorLimitsStorageAccount.accountId,
