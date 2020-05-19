@@ -47,7 +47,6 @@ services:
     env_file:
       - ../deploy/.env-default-jvm-options
     environment:
-      - PROFILE
       CHAIN-ADAPTER_QUEUESTOCREATE: brvs
     networks:
       - d3-network
