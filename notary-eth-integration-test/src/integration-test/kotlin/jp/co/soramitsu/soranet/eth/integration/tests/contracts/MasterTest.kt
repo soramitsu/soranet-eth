@@ -37,7 +37,7 @@ class MasterTest {
 
     @BeforeEach
     fun setup() {
-        cth = ContractTestHelper
+        cth = ContractTestHelper()
         master = cth.master
         token = cth.token
         accMain = cth.accMain

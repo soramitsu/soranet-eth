@@ -20,7 +20,7 @@ import kotlin.test.assertEquals
 
 class UpgradableTest {
 
-    val chr = ContractTestHelper
+    val chr = ContractTestHelper()
 
     /**
      * Test basic upgrade behavior

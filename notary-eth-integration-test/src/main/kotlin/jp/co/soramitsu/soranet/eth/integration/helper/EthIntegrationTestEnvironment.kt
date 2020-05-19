@@ -6,6 +6,9 @@
 package jp.co.soramitsu.soranet.eth.integration.helper
 
 import integration.registration.RegistrationServiceTestEnvironment
+import jp.co.soramitsu.soranet.eth.bridge.EthDepositConfig
+import jp.co.soramitsu.soranet.eth.provider.ETH_ADDRESS
+import jp.co.soramitsu.soranet.eth.sidechain.WithdrawalLimitProvider.Companion.XOR_PRECISION
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -20,6 +23,7 @@ object EthIntegrationTestEnvironment : Closeable {
     val integrationHelper = EthIntegrationHelperUtil
     val registrationTestEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
     var ethDepositConfig = getNewEthDepositConfig()
+    lateinit var relevantTokenAddress: String
 
     private lateinit var ethDeposit: Job
 
@@ -60,9 +64,11 @@ object EthIntegrationTestEnvironment : Closeable {
         }
     }
 
-    private fun getNewEthDepositConfig() =
-        EthIntegrationHelperUtil.configHelper.createEthDepositConfig(
-            xorTokenAddress = integrationHelper.contractTestHelper.xorAddress,
-            xorExchangeContractAddress = integrationHelper.masterContract.contractAddress
+    private fun getNewEthDepositConfig(): EthDepositConfig {
+        relevantTokenAddress = integrationHelper.deployRandomERC20Token(XOR_PRECISION).second
+        return EthIntegrationHelperUtil.configHelper.createEthDepositConfig(
+            xorTokenAddress = relevantTokenAddress,
+            xorExchangeContractAddress = ETH_ADDRESS
         )
+    }
 }

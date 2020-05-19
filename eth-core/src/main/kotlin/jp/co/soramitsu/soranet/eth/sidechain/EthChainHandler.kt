@@ -296,11 +296,13 @@ class EthChainHandler(
         return currentTime - (currentTime % MILLIS_IN_DAY) + Random.nextLong(MILLIS_FROM, MILLIS_TO)
     }
 
-    private fun getXorLimit() =
-        withdrawalLimitProvider
-            .getXorExchangeLiquidity()
+    private fun getXorLimit(): BigDecimal {
+        val xorExchangeLiquidity = withdrawalLimitProvider.getXorExchangeLiquidity()
+        logger.info("Got $xorExchangeLiquidity total supply")
+        return xorExchangeLiquidity
             .toBigDecimal()
             .divide(threshold, XOR_PRECISION, XOR_ROUNDING_MODE)
+    }
 
     /**
      * Logger
@@ -317,7 +319,7 @@ class EthChainHandler(
         private const val MILLIS_DAY_OFFSET = 600_000L
         private const val MILLIS_FROM = MILLIS_IN_DAY + MILLIS_DAY_OFFSET
         private const val MILLIS_TO = MILLIS_IN_DAY - MILLIS_DAY_OFFSET + MILLIS_IN_DAY
-        // kinda ok for 0.1 of slippage but not as strict as 1000: 905*10^18 since returned as integer
-        private val threshold = BigDecimal.valueOf(905_000_000_000_000_000L)
+        // kinda ok for 0.1 of slippage but not as strict as 1000
+        private val threshold = BigDecimal("905")
     }
 }

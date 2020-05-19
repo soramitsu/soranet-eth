@@ -71,7 +71,7 @@ object EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
         loadConfigs("test", TestEthereumConfig::class.java, "/test.properties").get()
 
     /** Ethereum utils */
-    val contractTestHelper = ContractTestHelper
+    val contractTestHelper by lazy { ContractTestHelper() }
 
     override val accountHelper = EthereumAccountHelper(irohaAPI)
 
@@ -94,8 +94,7 @@ object EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
     }
 
     val xorAddress by lazy {
-        val address = contractTestHelper.master.xorTokenInstance().send()
-        masterContract.addToken(address).send()
+        val address = masterContract.xorTokenInstance().send()
         addIrohaAnchoredERC20Token(address, EthTokenInfo("xor", "sora", 18))
         DeployHelper.logger.info("Deployed XOR contract: $address")
         address
@@ -103,7 +102,8 @@ object EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
 
     override val configHelper = EthConfigHelper(
         accountHelper,
-        masterContract.contractAddress
+        masterContract.contractAddress,
+        xorAddress
     )
 
     var ethDepositConfig: EthDepositConfig = configHelper.createEthDepositConfig()

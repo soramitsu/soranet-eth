@@ -22,7 +22,7 @@ import kotlin.test.assertEquals
  * Helper class for Ethereum contracts.
  * Deploys contracts on demand, contains set of functions to work with ethereum contracts.
  */
-object ContractTestHelper {
+class ContractTestHelper {
     private val testConfig =
         loadConfigs("test", TestEthereumConfig::class.java, "/test.properties").get()
     private val passwordConfig =
@@ -231,7 +231,7 @@ object ContractTestHelper {
     }
 
     fun getToken(tokenAddress: String): SoraToken {
-        return deployHelper.loadTokenSmartContract(tokenAddress)
+        return deployHelper.loadSoraTokenSmartContract(tokenAddress)
     }
 
     fun deployFailer(): String {

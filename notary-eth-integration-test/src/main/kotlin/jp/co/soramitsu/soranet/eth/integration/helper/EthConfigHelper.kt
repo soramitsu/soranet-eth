@@ -24,6 +24,7 @@ import java.math.BigInteger
 open class EthConfigHelper(
     private val accountHelper: EthereumAccountHelper,
     open val masterContractAddress: String,
+    open val xorTokenAddress: String,
     val lastEthereumReadBlockFilePath: String = "deploy/eth-deposit/last_eth_read_block.txt"
 ) : IrohaConfigHelper() {
 
@@ -62,8 +63,8 @@ open class EthConfigHelper(
         notaryCredential_: IrohaCredentialRawConfig = accountHelper.createCredentialRawConfig(
             accountHelper.notaryAccount
         ),
-        xorTokenAddress: String = "0x2F68C8e42F6f2b866b2B57E41eaB304B3930cC0B",
-        xorExchangeContractAddress: String = "0x4732c999ad17382522807dfa9451c53d002d576e"
+        xorTokenAddress: String = this@EthConfigHelper.xorTokenAddress,
+        xorExchangeContractAddress: String = masterContractAddress
 
     ): EthDepositConfig {
         return object : EthDepositConfig {

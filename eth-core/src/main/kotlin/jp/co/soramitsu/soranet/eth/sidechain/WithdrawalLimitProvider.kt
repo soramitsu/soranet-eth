@@ -9,7 +9,7 @@ import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
 import com.github.kittinunf.result.map
 import jp.co.soramitsu.iroha.java.Transaction
-import jp.co.soramitsu.soranet.eth.contract.SoraToken
+import jp.co.soramitsu.soranet.eth.contract.BasicCoin
 import mu.KLogging
 import java.math.BigDecimal
 import java.math.BigInteger
@@ -17,7 +17,7 @@ import java.math.RoundingMode
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * Soranet to ETH XOR withdrawal limit provider. TODO
+ * Soranet to ETH XOR withdrawal limit provider.
  */
 class WithdrawalLimitProvider(
     private val requesterQueryHelper: IrohaQueryHelper,
@@ -26,13 +26,14 @@ class WithdrawalLimitProvider(
     private val limitHolderAccount: String,
     private val limitUpdateTimeAccountKey: String,
     private val limitValueAccountKey: String,
-    private val soraTokenContract: SoraToken,
+    private val soraTokenContract: BasicCoin,
     private val xorExchangeAddress: String
 ) {
     private val creatorAccountId = setterIrohaConsumer.creator
 
     init {
         queryAndSetUpdateTime()
+        logger.info("Initialized withdrawal limit provider with token contract - ${soraTokenContract.contractAddress} and exchange address - $xorExchangeAddress")
     }
 
     private fun queryAndSetUpdateTime() {
@@ -47,7 +48,7 @@ class WithdrawalLimitProvider(
                 } else 0L
             }.get()
         )
-        logger.info("Set limit provider next update time from Iroha: ${nextUpdateTime.get()}")
+        logger.info("Loaded limit provider next update time from Iroha: ${nextUpdateTime.get()}")
     }
 
     fun updateLimit(consequentUpdateTime: Long, limit: BigDecimal) {
