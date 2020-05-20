@@ -8,14 +8,12 @@ package jp.co.soramitsu.soranet.eth.integration.tests
 import jp.co.soramitsu.soranet.eth.bridge.XOR_LIMITS_TIME_KEY
 import jp.co.soramitsu.soranet.eth.bridge.XOR_LIMITS_VALUE_KEY
 import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationTestEnvironment
-import jp.co.soramitsu.soranet.eth.provider.ETH_ADDRESS
 import jp.co.soramitsu.soranet.eth.sidechain.WithdrawalLimitProvider.Companion.XOR_PRECISION
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.math.BigDecimal
-import java.math.BigInteger
 import java.math.RoundingMode
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -42,18 +40,11 @@ class XorWithdrawalLimitsIntegrationTest {
      */
     @Test
     fun correctXorWithdrawalLimitsUpdate() {
-        // provide some supply
-        val amount = BigInteger("500000")
-        integrationHelper.sendERC20Token(
-            ethIntegrationTestEnvironment.relevantTokenAddress,
-            amount,
-            ETH_ADDRESS
-        )
-        Thread.sleep(3000)
+        val amount = ethIntegrationTestEnvironment.amount
         integrationHelper.waitOneEtherBlock {
             integrationHelper.deployRandomERC20Token()
         }
-        Thread.sleep(7500)
+        Thread.sleep(5000)
         val limit = integrationHelper.queryHelper.getAccountDetails(
             integrationHelper.accountHelper.xorLimitsStorageAccount.accountId,
             integrationHelper.accountHelper.withdrawalAccount.accountId,

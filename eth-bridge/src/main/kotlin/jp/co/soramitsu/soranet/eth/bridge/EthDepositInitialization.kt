@@ -143,6 +143,8 @@ class EthDepositInitialization(
 
     private val isHealthy = AtomicBoolean(true)
 
+    private val withdrawalLimitsNextUpdateTimeHolder = AtomicLong()
+
     init {
         logger.info {
             "Init deposit ethAddress=" +
@@ -209,7 +211,7 @@ class EthDepositInitialization(
         val withdrawalLimitProvider = WithdrawalLimitProvider(
             queryHelper,
             withdrawalIrohaConsumer,
-            AtomicLong(),
+            withdrawalLimitsNextUpdateTimeHolder,
             ethDepositConfig.withdrawalLimitStorageAccount,
             XOR_LIMITS_TIME_KEY,
             XOR_LIMITS_VALUE_KEY,

@@ -13,6 +13,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.io.Closeable
+import java.math.BigInteger
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -24,6 +25,7 @@ object EthIntegrationTestEnvironment : Closeable {
     val registrationTestEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
     var ethDepositConfig = getNewEthDepositConfig()
     lateinit var relevantTokenAddress: String
+    val amount = BigInteger("500000")
 
     private lateinit var ethDeposit: Job
 
@@ -66,6 +68,11 @@ object EthIntegrationTestEnvironment : Closeable {
 
     private fun getNewEthDepositConfig(): EthDepositConfig {
         relevantTokenAddress = integrationHelper.deployRandomERC20Token(XOR_PRECISION).second
+        integrationHelper.sendERC20Token(
+            relevantTokenAddress,
+            amount,
+            ETH_ADDRESS
+        )
         return EthIntegrationHelperUtil.configHelper.createEthDepositConfig(
             xorTokenAddress = relevantTokenAddress,
             xorExchangeContractAddress = ETH_ADDRESS

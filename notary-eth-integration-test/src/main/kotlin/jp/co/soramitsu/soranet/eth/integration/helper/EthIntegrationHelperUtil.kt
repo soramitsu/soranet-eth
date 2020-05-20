@@ -400,7 +400,6 @@ object EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
             RMQConfig::class.java, "rmq.properties"
         ),
         registrationConfig: EthRegistrationConfig = configHelper.createEthRegistrationConfig()
-
     ) {
         val name = String.getRandomString(9)
         val address = "http://localhost:${ethDepositConfig.refund.port}"
