@@ -53,7 +53,7 @@ class XorWithdrawalLimitsIntegrationTest {
         integrationHelper.waitOneEtherBlock {
             integrationHelper.deployRandomERC20Token()
         }
-        Thread.sleep(5000)
+        Thread.sleep(7500)
         val limit = integrationHelper.queryHelper.getAccountDetails(
             integrationHelper.accountHelper.xorLimitsStorageAccount.accountId,
             integrationHelper.accountHelper.withdrawalAccount.accountId,
