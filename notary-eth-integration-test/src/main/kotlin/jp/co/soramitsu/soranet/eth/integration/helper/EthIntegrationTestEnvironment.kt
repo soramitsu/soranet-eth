@@ -31,6 +31,11 @@ object EthIntegrationTestEnvironment : Closeable {
 
     fun init() {
         if (!isInitialized.get()) {
+            integrationHelper.sendERC20Token(
+                relevantTokenAddress,
+                amount,
+                ETH_ADDRESS
+            )
             // run notary
             ethDeposit = GlobalScope.launch {
                 integrationHelper.runEthDeposit(ethDepositConfig = ethDepositConfig)
@@ -49,6 +54,11 @@ object EthIntegrationTestEnvironment : Closeable {
             ethDeposit.cancel()
             Thread.sleep(2_000)
             ethDepositConfig = getNewEthDepositConfig()
+            integrationHelper.sendERC20Token(
+                relevantTokenAddress,
+                amount,
+                ETH_ADDRESS
+            )
             // run notary
             ethDeposit = GlobalScope.launch {
                 integrationHelper.runEthDeposit(ethDepositConfig = ethDepositConfig)
@@ -68,11 +78,6 @@ object EthIntegrationTestEnvironment : Closeable {
 
     private fun getNewEthDepositConfig(): EthDepositConfig {
         relevantTokenAddress = integrationHelper.deployRandomERC20Token(XOR_PRECISION).second
-        integrationHelper.sendERC20Token(
-            relevantTokenAddress,
-            amount,
-            ETH_ADDRESS
-        )
         return EthIntegrationHelperUtil.configHelper.createEthDepositConfig(
             xorTokenAddress = relevantTokenAddress,
             xorExchangeContractAddress = ETH_ADDRESS
