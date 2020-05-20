@@ -75,10 +75,20 @@ object EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
 
     override val accountHelper = EthereumAccountHelper(irohaAPI)
 
-    private val tokenProviderIrohaConsumer = IrohaConsumerImpl(accountHelper.tokenSetterAccount, irohaAPI)
+    private val tokenProviderIrohaConsumer by lazy {
+        IrohaConsumerImpl(
+            accountHelper.tokenSetterAccount,
+            irohaAPI
+        )
+    }
 
     /** Iroha consumer to set Ethereum contract addresses in Iroha */
-    private val ethAddressWriterIrohaConsumer = IrohaConsumerImpl(accountHelper.ethAddressesWriter, irohaAPI)
+    private val ethAddressWriterIrohaConsumer by lazy {
+        IrohaConsumerImpl(
+            accountHelper.ethAddressesWriter,
+            irohaAPI
+        )
+    }
 
     /** New master ETH master contract*/
     val masterContract by lazy {
@@ -100,13 +110,15 @@ object EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
         address
     }
 
-    override val configHelper = EthConfigHelper(
-        accountHelper,
-        masterContract.contractAddress,
-        xorAddress
-    )
+    override val configHelper by lazy {
+        EthConfigHelper(
+            accountHelper,
+            masterContract.contractAddress,
+            xorAddress
+        )
+    }
 
-    var ethDepositConfig: EthDepositConfig = configHelper.createEthDepositConfig()
+    val ethDepositConfig by lazy { configHelper.createEthDepositConfig() }
 
     val ethRegistrationConfig by lazy { configHelper.createEthRegistrationConfig() }
 
