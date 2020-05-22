@@ -36,7 +36,7 @@ services:
       - d3-network
 
   d3-chain-adapter:
-    image: docker.soramitsu.co.jp/soramitsu/chain-adapter:master
+    image: docker.soramitsu.co.jp/soramitsu/chain-adapter:latest
     container_name: d3-chain-adapter
     restart: on-failure
     depends_on:
@@ -67,7 +67,7 @@ services:
       - d3-network
 
   data-collector:
-    image: docker.soramitsu.co.jp/soranet/data-collector:master
+    image: docker.soramitsu.co.jp/soranet/data-collector:latest
     container_name: "data-collector"
     restart: on-failure
     ports:
@@ -98,7 +98,7 @@ services:
       - d3-network
 
   d3-brvs:
-    image: docker.soramitsu.co.jp/soranet/brvs-core:master
+    image: docker.soramitsu.co.jp/soranet/brvs-core:latest
     container_name: d3-brvs
     ports:
       - 8080:8080

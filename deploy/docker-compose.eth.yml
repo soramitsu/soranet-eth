@@ -17,7 +17,7 @@ services:
       - d3-network
 
   d3-eth-deposit:
-    image: docker.soramitsu.co.jp/soranet/eth-deposit:master
+    image: docker.soramitsu.co.jp/soranet/eth-deposit:latest
     container_name: d3-eth-deposit
     restart: on-failure
     env_file:
@@ -32,7 +32,7 @@ services:
       - d3-network
 
   d3-eth-testing:
-    image: docker.soramitsu.co.jp/soranet/eth-testing-endpoints:master
+    image: docker.soramitsu.co.jp/soranet/eth-testing-endpoints:latest
     container_name: d3-eth-testing
     restart: on-failure
     volumes:
