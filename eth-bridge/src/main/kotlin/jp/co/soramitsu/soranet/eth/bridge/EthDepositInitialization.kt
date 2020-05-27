@@ -145,6 +145,8 @@ class EthDepositInitialization(
 
     private val withdrawalLimitsNextUpdateTimeHolder = AtomicLong()
 
+    private val tokenSmartContract = deployHelper.loadTokenSmartContract(ethDepositConfig.xorTokenAddress)
+
     init {
         logger.info {
             "Init deposit ethAddress=" +
@@ -215,7 +217,7 @@ class EthDepositInitialization(
             ethDepositConfig.withdrawalLimitStorageAccount,
             XOR_LIMITS_TIME_KEY,
             XOR_LIMITS_VALUE_KEY,
-            deployHelper.loadTokenSmartContract(ethDepositConfig.xorTokenAddress),
+            tokenSmartContract,
             ethDepositConfig.xorExchangeContractAddress
         )
 

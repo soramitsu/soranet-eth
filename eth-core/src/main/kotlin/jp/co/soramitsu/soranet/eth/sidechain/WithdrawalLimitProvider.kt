@@ -9,8 +9,8 @@ import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
 import com.github.kittinunf.result.map
 import jp.co.soramitsu.iroha.java.Transaction
-import jp.co.soramitsu.soranet.eth.contract.BasicCoin
 import mu.KLogging
+import org.web3j.contracts.eip20.generated.ERC20
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.math.RoundingMode
@@ -26,7 +26,7 @@ class WithdrawalLimitProvider(
     private val limitHolderAccount: String,
     private val limitUpdateTimeAccountKey: String,
     private val limitValueAccountKey: String,
-    private val soraTokenContract: BasicCoin,
+    private val soraTokenContract: ERC20,
     private val xorExchangeAddress: String
 ) {
     private val creatorAccountId = setterIrohaConsumer.creator
