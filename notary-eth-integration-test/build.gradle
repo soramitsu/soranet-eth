@@ -1,3 +1,8 @@
+/*
+ * Copyright Soramitsu Co., Ltd. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 buildscript {
     repositories {
         mavenCentral()
@@ -32,24 +37,20 @@ task integrationTest(type: Test) {
     classpath = sourceSets.integrationTest.runtimeClasspath
     setWorkingDir("$rootDir/")
     // Enable JUnit5 tests
-    useJUnitPlatform {
-    }
+    useJUnitPlatform()
 
     mustRunAfter test
 }
 check.dependsOn integrationTest
 
 dependencies {
-    implementation project(":eth")
-    implementation project(":eth-erc20-registration")
-    implementation project(":eth-registration")
-    implementation project(":eth-relay")
-    implementation project(":eth-deposit")
-    implementation project(":eth-vacuum")
-    implementation project(":eth-withdrawal")
+    implementation project(":eth-core")
+    implementation project(":eth-bridge")
 
-    implementation "com.github.d3ledger.notary:notary-registration:$notary_version"
-    implementation "com.github.d3ledger.notary:notary-iroha-integration-test:$notary_version"
+    implementation "com.github.soramitsu.soranet-validator:notary-registration:$notary_version"
+    implementation "com.github.soramitsu.soranet-validator:notary-iroha-integration-test:$notary_version"
+    implementation "com.github.soramitsu.soranet-validator:notifications-model:$notary_version"
 
     implementation "org.web3j:core:$web3j_version"
+    implementation "com.squareup.moshi:moshi-kotlin:1.8.0"
 }
