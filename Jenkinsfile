@@ -113,12 +113,13 @@ pipeline {
                 script {
                     env.DOCKER_TAG = env.TAG_NAME ? env.TAG_NAME : env.BRANCH_NAME
 
+                    def dockerPushConfig =  " -e DOCKER_REGISTRY_URL='https://docker.soramitsu.co.jp'" +
+                                            " -e DOCKER_REGISTRY_USERNAME='${SORANET_DOCKER_USR}'" +
+                                            " -e DOCKER_REGISTRY_PASSWORD='${SORANET_DOCKER_PSW}'" +
+                                            " -e TAG='${DOCKER_TAG}'"
+                    
                     iC = docker.image("gradle:4.10.2-jdk8-slim")
-                    iC.inside(dockerRunArgs) {
-                        sh "export DOCKER_REGISTRY_URL='https://docker.soramitsu.co.jp'"
-                        sh "export DOCKER_REGISTRY_USERNAME='${SORANET_DOCKER_USR}'"
-                        sh "export DOCKER_REGISTRY_PASSWORD='${SORANET_DOCKER_PSW}'"
-                        sh "export TAG='${DOCKER_TAG}'"
+                    iC.inside("${dockerRunArgs} ${dockerConfig}") {
                         sh "gradle shadowJar"
                         sh "gradle dockerPush"
                     }
