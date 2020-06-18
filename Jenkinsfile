@@ -32,16 +32,22 @@ pipeline {
           sh(returnStdout: true, script: "docker-compose -f deploy/docker-compose.yml -f deploy/docker-compose.ci.yml up --build -d")
 
 
-          iC = docker.image("openjdk:8-jdk")
-          iC.inside("--network='d3-${DOCKER_NETWORK}' -e JVM_OPTS='-Xmx3200m' -e TERM='dumb' -v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp") {
-            sh "./gradlew dependencies"
-            sh "./gradlew test --info"
-            // We need this to test containers
-            sh "./gradlew dockerfileCreate"
-            sh "./gradlew compileIntegrationTestKotlin --info"
-            sh "./gradlew integrationTest --info"
-            sh "./gradlew d3TestReport"
+          docker.withRegistry('https://docker.soramitsu.co.jp/', 'bot-build-tools-ro'){
+
+            iC = docker.image("docker.soramitsu.co.jp/build-tools/openjdk-8:latest")
+
+            iC.inside("--network='d3-${DOCKER_NETWORK}' -e JVM_OPTS='-Xmx3200m' -e TERM='dumb' -v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp") {
+              sh "./gradlew dependencies"
+              sh "./gradlew test --info"
+              // We need this to test containers
+              sh "./gradlew dockerfileCreate"
+              sh "./gradlew compileIntegrationTestKotlin --info"
+              sh "./gradlew integrationTest --info"
+              sh "./gradlew d3TestReport"
+            }
           }
+          
+
           if (env.BRANCH_NAME == 'develop') {
             iC.inside("--network='d3-${DOCKER_NETWORK}' -e JVM_OPTS='-Xmx3200m' -e TERM='dumb'") {
               withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]){
