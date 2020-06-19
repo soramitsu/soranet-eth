@@ -120,6 +120,7 @@ pipeline {
                     
                     iC = docker.image("gradle:4.10.2-jdk8-slim")
                     iC.inside("${dockerRunArgs} ${dockerPushConfig}") {
+                        sh "docker login docker.soramitsu.co.jp -u ${SORANET_DOCKER_USR} -p '${SORANET_DOCKER_PSW}'"
                         sh "gradle shadowJar"
                         sh "gradle dockerPush"
                     }
