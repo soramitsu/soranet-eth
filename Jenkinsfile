@@ -119,7 +119,7 @@ pipeline {
                                             " -e TAG='${DOCKER_TAG}'"
                     
                     iC = docker.image("gradle:4.10.2-jdk8-slim")
-                    iC.inside("${dockerRunArgs} ${dockerConfig}") {
+                    iC.inside("${dockerRunArgs} ${dockerPushConfig}") {
                         sh "gradle shadowJar"
                         sh "gradle dockerPush"
                     }
