@@ -20,20 +20,20 @@ import java.util.concurrent.atomic.AtomicLong
  * Soranet to ETH XOR withdrawal limit provider.
  */
 class WithdrawalLimitProvider(
-    private val requesterQueryHelper: IrohaQueryHelper,
-    private val setterIrohaConsumer: IrohaConsumer,
-    val nextUpdateTime: AtomicLong,
-    private val limitHolderAccount: String,
-    private val limitUpdateTimeAccountKey: String,
-    private val limitValueAccountKey: String,
-    private val soraTokenContract: ERC20,
-    private val xorExchangeAddress: String
+        private val requesterQueryHelper: IrohaQueryHelper,
+        private val setterIrohaConsumer: IrohaConsumer,
+        val nextUpdateTime: AtomicLong,
+        private val limitHolderAccount: String,
+        private val limitUpdateTimeAccountKey: String,
+        private val limitValueAccountKey: String,
+        private val tokenContract: ERC20,
+        private val xorExchangeAddress: String
 ) {
     private val creatorAccountId = setterIrohaConsumer.creator
 
     init {
         queryAndSetUpdateTime()
-        logger.info("Initialized withdrawal limit provider with token contract - ${soraTokenContract.contractAddress} and exchange address - $xorExchangeAddress")
+        logger.info("Initialized withdrawal limit provider with token contract - ${tokenContract.contractAddress} and exchange address - $xorExchangeAddress")
     }
 
     private fun queryAndSetUpdateTime() {
@@ -90,7 +90,7 @@ class WithdrawalLimitProvider(
     }
 
     fun getXorExchangeLiquidity(): BigInteger {
-        return soraTokenContract.balanceOf(xorExchangeAddress).send()
+        return tokenContract.balanceOf(xorExchangeAddress).send()
     }
 
     companion object : KLogging() {

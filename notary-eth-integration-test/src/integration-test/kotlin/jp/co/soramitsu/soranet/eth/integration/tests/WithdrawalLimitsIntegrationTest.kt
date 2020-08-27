@@ -20,7 +20,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class XorWithdrawalLimitsIntegrationTest {
+class WithdrawalLimitsIntegrationTest {
     private val ethIntegrationTestEnvironment = EthIntegrationTestEnvironment
     private val integrationHelper = ethIntegrationTestEnvironment.integrationHelper
 

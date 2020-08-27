@@ -7,7 +7,7 @@ package jp.co.soramitsu.soranet.eth.integration.helper
 
 import com.d3.commons.config.loadConfigs
 import jp.co.soramitsu.soranet.eth.config.EthereumPasswords
-import jp.co.soramitsu.soranet.eth.contract.SoraToken
+import jp.co.soramitsu.soranet.eth.contract.MasterToken
 import jp.co.soramitsu.soranet.eth.helper.hexStringToByteArray
 import jp.co.soramitsu.soranet.eth.sidechain.util.*
 import org.web3j.crypto.Credentials
@@ -43,11 +43,14 @@ class ContractTestHelper {
     val token by lazy { deployHelper.deployERC20TokenSmartContract() }
     val master by lazy {
         deployHelper.deployUpgradableMasterSmartContract(
-            listOf(accMain)
+            listOf(accMain),
+            TOKEN_NAME,
+            TOKEN_SYMBOL,
+            TOKEN_DECIMALS
         )
     }
-    val xorAddress by lazy {
-        master.xorTokenInstance().send()
+    val tokenAddress by lazy {
+        master.tokenInstance().send()
     }
 
     val etherAddress = "0x0000000000000000000000000000000000000000"
@@ -164,7 +167,7 @@ class ContractTestHelper {
 
     fun mintByPeer(beneficiary: String, amount: Long): TransactionReceipt {
         val finalHash = hashToMint(
-            xorAddress,
+            tokenAddress,
             amount.toString(),
             beneficiary,
             defaultIrohaHash,
@@ -173,7 +176,7 @@ class ContractTestHelper {
         val sigs = prepareSignatures(1, listOf(keypair), finalHash)
 
         return master.mintTokensByPeers(
-            xorAddress,
+            tokenAddress,
             BigInteger.valueOf(amount),
             beneficiary,
             defaultByteHash,
@@ -230,11 +233,17 @@ class ContractTestHelper {
         return Pair(keyPairs, peers)
     }
 
-    fun getSoraToken(tokenAddress: String): SoraToken {
-        return deployHelper.loadSoraTokenSmartContract(tokenAddress)
+    fun getTokenContract(tokenAddress: String): MasterToken {
+        return deployHelper.loadSpecificTokenSmartContract(tokenAddress)
     }
 
     fun deployFailer(): String {
         return deployHelper.deployFailerContract().contractAddress
+    }
+
+    companion object {
+        const val TOKEN_NAME = "Test Token"
+        const val TOKEN_SYMBOL = "TST"
+        val TOKEN_DECIMALS: BigInteger = BigInteger.valueOf(18)
     }
 }

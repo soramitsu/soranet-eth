@@ -12,14 +12,9 @@ import com.d3.commons.util.toHexString
 import com.d3.notifications.event.SoraAckEthWithdrawalProofEvent
 import integration.helper.D3_DOMAIN
 import integration.helper.IrohaConfigHelper
-import integration.registration.RegistrationServiceTestEnvironment
-import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationHelperUtil
 import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationTestEnvironment
 import jp.co.soramitsu.soranet.eth.provider.ETH_PRECISION
 import jp.co.soramitsu.soranet.eth.token.EthTokenInfo
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import org.junit.jupiter.api.*
 import org.web3j.crypto.ECKeyPair
 import org.web3j.crypto.Keys
@@ -240,7 +235,7 @@ class WalletWithdrawalPipelineIntegrationTest {
     fun testIrohaAnchoredWithdrawalPipeline() {
         val amount = "2.34"
         val assetId = "xor#sora"
-        val tokenAddress = integrationHelper.xorAddress
+        val tokenAddress = integrationHelper.tokenAddress
         val tokenInfo = EthTokenInfo("xor", "sora", 18)
         integrationHelper.addIrohaAnchoredERC20Token(tokenAddress, tokenInfo)
 

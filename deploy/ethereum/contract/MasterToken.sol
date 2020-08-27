@@ -4,14 +4,14 @@ import "./ERC20Detailed.sol";
 import "./ERC20Burnable.sol";
 import "./Ownable.sol";
 
-contract SoraToken is ERC20Burnable, ERC20Detailed, Ownable {
+contract MasterToken is ERC20Burnable, ERC20Detailed, Ownable {
 
     uint256 public constant INITIAL_SUPPLY = 0;
 
     /**
      * @dev Constructor that gives msg.sender all of existing tokens.
      */
-    constructor() public ERC20Detailed("Sora Token", "XOR", 18) {
+    constructor(string memory name, string memory symbol, uint8 decimals) public ERC20Detailed(name, symbol, decimals) {
         _mint(msg.sender, INITIAL_SUPPLY);
     }
 

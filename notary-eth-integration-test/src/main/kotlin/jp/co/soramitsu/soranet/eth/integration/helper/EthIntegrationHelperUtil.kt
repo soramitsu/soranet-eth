@@ -103,8 +103,8 @@ object EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
         contract
     }
 
-    val xorAddress by lazy {
-        val address = masterContract.xorTokenInstance().send()
+    val tokenAddress by lazy {
+        val address = masterContract.tokenInstance().send()
         addIrohaAnchoredERC20Token(address, EthTokenInfo("xor", "sora", 18))
         DeployHelper.logger.info("Deployed XOR contract: $address")
         address
@@ -114,7 +114,7 @@ object EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
         EthConfigHelper(
             accountHelper,
             masterContract.contractAddress,
-            xorAddress
+            tokenAddress
         )
     }
 
