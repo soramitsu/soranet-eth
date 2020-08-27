@@ -46,8 +46,8 @@ class ContractTestHelper {
             listOf(accMain)
         )
     }
-    val xorAddress by lazy {
-        master.xorTokenInstance().send()
+    val tokenAddress by lazy {
+        master.tokenInstance().send()
     }
 
     val etherAddress = "0x0000000000000000000000000000000000000000"
@@ -164,7 +164,7 @@ class ContractTestHelper {
 
     fun mintByPeer(beneficiary: String, amount: Long): TransactionReceipt {
         val finalHash = hashToMint(
-            xorAddress,
+            tokenAddress,
             amount.toString(),
             beneficiary,
             defaultIrohaHash,
@@ -173,7 +173,7 @@ class ContractTestHelper {
         val sigs = prepareSignatures(1, listOf(keypair), finalHash)
 
         return master.mintTokensByPeers(
-            xorAddress,
+            tokenAddress,
             BigInteger.valueOf(amount),
             beneficiary,
             defaultByteHash,

@@ -92,7 +92,7 @@ open class EthConfigHelper(
             override val ethMasterAddress = masterContractAddress
             override val ethereumWalletStorageAccount = accountHelper.ethereumWalletStorageAccount.accountId
             override val ethereumWalletSetterAccount = accountHelper.notaryAccount.accountId
-            override val masterContractAbiPath = "deploy/ethereum/contract/abi/Master.abi"
+            override val masterContractAbiPath = "deploy/ethereum/contract/abi/MasterTestV1.abi"
             override val withdrawalLimitStorageAccount = accountHelper.xorLimitsStorageAccount.accountId
             override val xorTokenAddress = xorTokenAddress
             override val xorExchangeContractAddress = xorExchangeContractAddress

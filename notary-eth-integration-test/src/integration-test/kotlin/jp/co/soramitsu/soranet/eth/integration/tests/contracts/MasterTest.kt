@@ -7,7 +7,7 @@ package jp.co.soramitsu.soranet.eth.integration.tests.contracts
 
 import integration.helper.IrohaConfigHelper
 import jp.co.soramitsu.soranet.eth.contract.BasicCoin
-import jp.co.soramitsu.soranet.eth.contract.Master
+import jp.co.soramitsu.soranet.eth.contract.MasterTestV1
 import jp.co.soramitsu.soranet.eth.helper.hexStringToByteArray
 import jp.co.soramitsu.soranet.eth.integration.helper.ContractTestHelper
 import jp.co.soramitsu.soranet.eth.sidechain.util.hashToAddAndRemovePeer
@@ -26,7 +26,7 @@ import kotlin.test.assertEquals
 
 class MasterTest {
     private lateinit var cth: ContractTestHelper
-    private lateinit var master: Master
+    private lateinit var master: MasterTestV1
     private lateinit var token: BasicCoin
     private lateinit var accMain: String
     private lateinit var accGreen: String
@@ -1090,7 +1090,7 @@ class MasterTest {
             val master = cth.deployHelper.deployUpgradableMasterSmartContract(
                 peers
             )
-            val xorAddress = master.xorTokenInstance().send()
+            val xorAddress = master.tokenInstance().send()
 
             val finalHash = hashToMint(
                 xorAddress,
@@ -1116,7 +1116,7 @@ class MasterTest {
 
             Assertions.assertEquals(
                 amountToSend,
-                cth.getSoraToken(master.xorTokenInstance().send()).balanceOf(beneficiary).send().toInt()
+                cth.getSoraToken(master.tokenInstance().send()).balanceOf(beneficiary).send().toInt()
             )
         }
     }
@@ -1140,7 +1140,7 @@ class MasterTest {
             val master = cth.deployHelper.deployUpgradableMasterSmartContract(
                 peers.dropLast(1)
             )
-            val xorToken = master.xorTokenInstance().send()
+            val xorToken = master.tokenInstance().send()
 
             val finalHash = hashToMint(
                 xorToken,
@@ -1167,7 +1167,7 @@ class MasterTest {
 
             Assertions.assertEquals(
                 amountToSend,
-                cth.getSoraToken(master.xorTokenInstance().send()).balanceOf(beneficiary).send().toInt()
+                cth.getSoraToken(master.tokenInstance().send()).balanceOf(beneficiary).send().toInt()
             )
         }
     }
@@ -1188,7 +1188,7 @@ class MasterTest {
             Assertions.assertTrue(result)
             Assertions.assertEquals(
                 amountToSend,
-                cth.getSoraToken(master.xorTokenInstance().send()).balanceOf(beneficiary).send().toLong()
+                cth.getSoraToken(master.tokenInstance().send()).balanceOf(beneficiary).send().toLong()
             )
 
             Assertions.assertThrows(TransactionException::class.java) {
@@ -1196,7 +1196,7 @@ class MasterTest {
             }
             Assertions.assertEquals(
                 amountToSend,
-                cth.getSoraToken(master.xorTokenInstance().send()).balanceOf(beneficiary).send().toLong()
+                cth.getSoraToken(master.tokenInstance().send()).balanceOf(beneficiary).send().toLong()
             )
         }
     }
@@ -1211,7 +1211,7 @@ class MasterTest {
         Assertions.assertTimeoutPreemptively(timeoutDuration) {
             assertEquals(
                 BigInteger("0"),
-                cth.getSoraToken(master.xorTokenInstance().send()).balanceOf(master.contractAddress).send()
+                cth.getSoraToken(master.tokenInstance().send()).balanceOf(master.contractAddress).send()
             )
         }
     }

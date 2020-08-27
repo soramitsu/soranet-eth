@@ -8,7 +8,7 @@ buildscript {
     ext.ktor_version = '1.0.0'
     ext.notary_version = 'e24bbd67347d2f6d3601d29c7dd5149405e16033'
     ext.chain_adapter_client_version = '9e65b4e38dd82d9a2ddc1065326050d4dc296075'
-    ext.web3j_version = '4.4.1'
+    ext.web3j_version = '4.5.16'
 
     repositories {
         mavenCentral()
@@ -126,7 +126,8 @@ task buildEthereumContractsBindings(type: Exec) {
             'name=$(echo "$f" | cut -f 1 -d \'.\'); ' +
             'web3j solidity generate -b ${name}.bin --abiFile=${name}.abi -o <bin_path> -p contract \n'.replace("<bin_path>", bin_path) +
             'done \n' +
-            'cp deploy/ethereum/contract/bin/contract/* eth/src/main/java/contract'
+            'cp -R deploy/ethereum/contract/bin/contract eth-core/src/main/java/jp/co/soramitsu/soranet/eth/contract \n' +
+            'rm -R deploy/ethereum/contract/bin'
 
     commandLine 'bash', '-c', cmd
 }

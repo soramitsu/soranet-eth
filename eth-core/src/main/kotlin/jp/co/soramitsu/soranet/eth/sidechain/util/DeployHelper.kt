@@ -45,9 +45,9 @@ class BasicAuthenticator(private val nodeLogin: String?, private val nodePasswor
         ethereumPasswords.nodePassword
     )
 
-    override fun authenticate(route: Route, response: Response): Request {
+    override fun authenticate(route: Route?, response: Response): Request {
         val credential = Credentials.basic(nodeLogin!!, nodePassword!!)
-        return response.request().newBuilder().header("Authorization", credential).build()
+        return response.request.newBuilder().header("Authorization", credential).build()
     }
 }
 
@@ -215,8 +215,8 @@ class DeployHelper(
      * Deploy master smart contract
      * @return master smart contract object
      */
-    fun deployMasterSmartContract(peers: List<String>): Master {
-        val master = Master.deploy(
+    fun deployMasterSmartContract(peers: List<String>): MasterTestV1 {
+        val master = MasterTestV1.deploy(
             web3,
             defaultTransactionManager,
             StaticGasProvider(gasPrice, gasLimit),
@@ -229,7 +229,7 @@ class DeployHelper(
     /**
      * Deploy [Master] via [OwnedUpgradeabilityProxy].
      */
-    fun deployUpgradableMasterSmartContract(peers: List<String>): Master {
+    fun deployUpgradableMasterSmartContract(peers: List<String>): MasterTestV1 {
         // deploy implementation
         val master = deployMasterSmartContract(peers)
 
@@ -257,14 +257,13 @@ class DeployHelper(
      * @param address - address of master contract
      * @return Master contract
      */
-    fun loadMasterContract(address: String): Master {
-        val proxiedMaster = Master.load(
+    fun loadMasterContract(address: String): MasterTestV1 {
+        return MasterTestV1.load(
             address,
-            web3,
-            defaultTransactionManager,
+                web3,
+                defaultTransactionManager,
             StaticGasProvider(gasPrice, gasLimit)
         )
-        return proxiedMaster
     }
 
     /**
@@ -365,13 +364,13 @@ class DeployHelper(
      * Deploy OwnedUpgradabilityProxy contract. Contract is an upgradable proxy to another contract.
      */
     fun deployOwnedUpgradeabilityProxy(): OwnedUpgradeabilityProxy {
-        val OwnedUpgradeabilityProxy = OwnedUpgradeabilityProxy.deploy(
+        val ownedUpgradeabilityProxy = OwnedUpgradeabilityProxy.deploy(
             web3,
             defaultTransactionManager,
             StaticGasProvider(gasPrice, gasLimit)
         ).send()
-        logger.info { "OwnedUpgradeabilityProxy was deployed at ${OwnedUpgradeabilityProxy.contractAddress}" }
-        return OwnedUpgradeabilityProxy
+        logger.info { "OwnedUpgradeabilityProxy was deployed at ${ownedUpgradeabilityProxy.contractAddress}" }
+        return ownedUpgradeabilityProxy
     }
 
     /**

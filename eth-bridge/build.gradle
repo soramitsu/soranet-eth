@@ -40,7 +40,7 @@ soramitsu {
         jar = new File("build/libs/app.jar")
         // files that will be added to the docker image (optional)
         // host fs: docker image fs
-        files = ['../deploy/ethereum/contract/abi/Master.abi': '/config/abi/Master.abi']
+        files = ['../deploy/ethereum/contract/abi/MasterTestV1.abi': '/config/abi/MasterTestV1.abi']
         // the rest in configured using env variables
     }
 }
