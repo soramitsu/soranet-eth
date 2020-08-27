@@ -15,6 +15,8 @@ import okhttp3.*
 import org.web3j.abi.datatypes.Address
 import org.web3j.abi.datatypes.DynamicArray
 import org.web3j.abi.datatypes.Type
+import org.web3j.abi.datatypes.Utf8String
+import org.web3j.abi.datatypes.generated.Uint8
 import org.web3j.contracts.eip20.generated.ERC20
 import org.web3j.crypto.WalletUtils
 import org.web3j.protocol.Web3j
@@ -254,7 +256,10 @@ class DeployHelper(
             encodeFunction(
                 "initialize",
                 Address(credentials.address) as Type<Any>,
-                DynamicArray<Address>(Address::class.java, peers.map { Address(it) }) as Type<Any>
+                DynamicArray<Address>(Address::class.java, peers.map { Address(it) }) as Type<Any>,
+                Utf8String(tokenFullName) as Type<Any>,
+                Utf8String(tokenSymbol) as Type<Any>,
+                Uint8(decimals) as Type<Any>
             )
         proxy.upgradeToAndCall(master.contractAddress, encoded, BigInteger.ZERO).send()
 
