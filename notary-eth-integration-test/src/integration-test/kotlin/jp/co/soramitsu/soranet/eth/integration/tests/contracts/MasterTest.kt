@@ -10,6 +10,9 @@ import jp.co.soramitsu.soranet.eth.contract.BasicCoin
 import jp.co.soramitsu.soranet.eth.contract.Master
 import jp.co.soramitsu.soranet.eth.helper.hexStringToByteArray
 import jp.co.soramitsu.soranet.eth.integration.helper.ContractTestHelper
+import jp.co.soramitsu.soranet.eth.integration.helper.ContractTestHelper.Companion.TOKEN_DECIMALS
+import jp.co.soramitsu.soranet.eth.integration.helper.ContractTestHelper.Companion.TOKEN_NAME
+import jp.co.soramitsu.soranet.eth.integration.helper.ContractTestHelper.Companion.TOKEN_SYMBOL
 import jp.co.soramitsu.soranet.eth.sidechain.util.hashToAddAndRemovePeer
 import jp.co.soramitsu.soranet.eth.sidechain.util.hashToMint
 import jp.co.soramitsu.soranet.eth.sidechain.util.hashToWithdraw
@@ -462,7 +465,10 @@ class MasterTest {
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
 
             val master = cth.deployHelper.deployMasterSmartContract(
-                peers
+                peers,
+                TOKEN_NAME,
+                TOKEN_SYMBOL,
+                TOKEN_DECIMALS
             )
 
             cth.sendEthereum(BigInteger.valueOf(5000), master.contractAddress)
@@ -515,7 +521,10 @@ class MasterTest {
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
 
             val master = cth.deployHelper.deployMasterSmartContract(
-                peers.dropLast(1)
+                peers.dropLast(1),
+                TOKEN_NAME,
+                TOKEN_SYMBOL,
+                TOKEN_DECIMALS
             )
 
             cth.sendEthereum(BigInteger.valueOf(5000), master.contractAddress)
@@ -570,7 +579,10 @@ class MasterTest {
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
 
             val master = cth.deployHelper.deployMasterSmartContract(
-                peers
+                peers,
+                TOKEN_NAME,
+                TOKEN_SYMBOL,
+                TOKEN_DECIMALS
             )
 
             cth.sendEthereum(BigInteger.valueOf(5000), master.contractAddress)
@@ -626,7 +638,10 @@ class MasterTest {
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
 
             val master = cth.deployHelper.deployMasterSmartContract(
-                peers
+                peers,
+                TOKEN_NAME,
+                TOKEN_SYMBOL,
+                TOKEN_DECIMALS
             )
 
             val finalHash =
@@ -672,7 +687,10 @@ class MasterTest {
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
 
             val master = cth.deployHelper.deployMasterSmartContract(
-                peers
+                peers,
+                TOKEN_NAME,
+                TOKEN_SYMBOL,
+                TOKEN_DECIMALS
             )
 
             cth.sendEthereum(BigInteger.valueOf(5000), master.contractAddress)
@@ -727,7 +745,10 @@ class MasterTest {
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
 
             val master = cth.deployHelper.deployMasterSmartContract(
-                peers
+                peers,
+                TOKEN_NAME,
+                TOKEN_SYMBOL,
+                TOKEN_DECIMALS
             )
             cth.sendEthereum(BigInteger.valueOf(5000), master.contractAddress)
 
@@ -782,7 +803,10 @@ class MasterTest {
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
 
             val master = cth.deployHelper.deployMasterSmartContract(
-                peers
+                peers,
+                TOKEN_NAME,
+                TOKEN_SYMBOL,
+                TOKEN_DECIMALS
             )
 
             val finalHash =
@@ -832,7 +856,10 @@ class MasterTest {
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
 
             val master = cth.deployHelper.deployMasterSmartContract(
-                peers
+                peers,
+                TOKEN_NAME,
+                TOKEN_SYMBOL,
+                TOKEN_DECIMALS
             )
 
             val sigs =
@@ -874,7 +901,10 @@ class MasterTest {
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
 
             val master = cth.deployHelper.deployMasterSmartContract(
-                peers
+                peers,
+                TOKEN_NAME,
+                TOKEN_SYMBOL,
+                TOKEN_DECIMALS
             )
 
             val sigs =
@@ -917,7 +947,10 @@ class MasterTest {
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
 
             val master = cth.deployHelper.deployMasterSmartContract(
-                peers
+                peers,
+                TOKEN_NAME,
+                TOKEN_SYMBOL,
+                TOKEN_DECIMALS
             )
 
             val sigs =
@@ -997,7 +1030,10 @@ class MasterTest {
 
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
             val master = cth.deployHelper.deployMasterSmartContract(
-                peers
+                peers,
+                TOKEN_NAME,
+                TOKEN_SYMBOL,
+                TOKEN_DECIMALS
             )
 
             val sigs =
@@ -1038,7 +1074,10 @@ class MasterTest {
             val withPeerToRemove = peers.toMutableList()
             withPeerToRemove.add(peerToRemove)
             val master = cth.deployHelper.deployMasterSmartContract(
-                withPeerToRemove
+                withPeerToRemove,
+                TOKEN_NAME,
+                TOKEN_SYMBOL,
+                TOKEN_DECIMALS
             )
 
             withPeerToRemove.forEach { oldPeer ->
@@ -1088,7 +1127,10 @@ class MasterTest {
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
 
             val master = cth.deployHelper.deployUpgradableMasterSmartContract(
-                peers
+                peers,
+                TOKEN_NAME,
+                TOKEN_SYMBOL,
+                TOKEN_DECIMALS
             )
             val xorAddress = master.tokenInstance().send()
 
@@ -1138,7 +1180,10 @@ class MasterTest {
             val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
 
             val master = cth.deployHelper.deployUpgradableMasterSmartContract(
-                peers.dropLast(1)
+                peers.dropLast(1),
+                TOKEN_NAME,
+                TOKEN_SYMBOL,
+                TOKEN_DECIMALS
             )
             val xorToken = master.tokenInstance().send()
 
