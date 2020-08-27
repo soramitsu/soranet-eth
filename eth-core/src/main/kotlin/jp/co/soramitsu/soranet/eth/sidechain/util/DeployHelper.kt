@@ -215,12 +215,20 @@ class DeployHelper(
      * Deploy master smart contract
      * @return master smart contract object
      */
-    fun deployMasterSmartContract(peers: List<String>): MasterTestV1 {
-        val master = MasterTestV1.deploy(
+    fun deployMasterSmartContract(
+            peers: List<String>,
+            tokenFullName: String,
+            tokenSymbol: String,
+            decimals: BigInteger
+    ): Master {
+        val master = Master.deploy(
             web3,
             defaultTransactionManager,
             StaticGasProvider(gasPrice, gasLimit),
-            peers
+            peers,
+            tokenFullName,
+            tokenSymbol,
+            decimals
         ).send()
         logger.info { "Master smart contract ${master.contractAddress} was deployed" }
         return master
@@ -229,9 +237,14 @@ class DeployHelper(
     /**
      * Deploy [Master] via [OwnedUpgradeabilityProxy].
      */
-    fun deployUpgradableMasterSmartContract(peers: List<String>): MasterTestV1 {
+    fun deployUpgradableMasterSmartContract(
+            peers: List<String>,
+            tokenFullName: String,
+            tokenSymbol: String,
+            decimals: BigInteger
+    ): Master {
         // deploy implementation
-        val master = deployMasterSmartContract(peers)
+        val master = deployMasterSmartContract(peers, tokenFullName, tokenSymbol, decimals)
 
         // deploy proxy
         val proxy = deployOwnedUpgradeabilityProxy()
@@ -257,8 +270,8 @@ class DeployHelper(
      * @param address - address of master contract
      * @return Master contract
      */
-    fun loadMasterContract(address: String): MasterTestV1 {
-        return MasterTestV1.load(
+    fun loadMasterContract(address: String): Master {
+        return Master.load(
             address,
                 web3,
                 defaultTransactionManager,
@@ -284,16 +297,16 @@ class DeployHelper(
      * Load Sora token smart contract
      * @return Sora token instance
      */
-    fun loadSoraTokenSmartContract(tokenAddress: String): SoraToken {
-        val soraToken =
-            SoraToken.load(
+    fun loadSpecificTokenSmartContract(tokenAddress: String): MasterToken {
+        val token =
+            MasterToken.load(
                 tokenAddress,
                 web3,
                 defaultTransactionManager,
                 defaultGasProvider
             )
-        logger.info { "Sora token contract ${soraToken.contractAddress} was loaded" }
-        return soraToken
+        logger.info { "Sora token contract ${token.contractAddress} was loaded" }
+        return token
     }
 
     /**

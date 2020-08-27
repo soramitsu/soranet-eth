@@ -1,7 +1,7 @@
 pragma solidity ^0.5.8;
 
 import "./IERC20.sol";
-import "./SoraToken.sol";
+import "./MasterToken.sol";
 
 /**
  * Provides functionality of master contract
@@ -18,7 +18,7 @@ contract Master {
     /** registered client addresses */
     mapping(address => bytes) public registeredClients;
 
-    SoraToken public xorTokenInstance;
+    MasterToken public tokenInstance;
 
     mapping(address => bool) public isToken;
 
@@ -35,14 +35,14 @@ contract Master {
     /**
      * Constructor. Sets contract owner to contract creator.
      */
-    constructor(address[] memory initialPeers) public {
-        initialize(msg.sender, initialPeers);
+    constructor(address[] memory initialPeers, string memory name, string memory symbol, uint8 decimals) public {
+        initialize(msg.sender, initialPeers, name, symbol, decimals);
     }
 
     /**
      * Initialization of smart contract.
      */
-    function initialize(address owner, address[] memory initialPeers) public {
+    function initialize(address owner, address[] memory initialPeers, string memory name, string memory symbol, uint8 decimals) public {
         require(!initialized_);
 
         owner_ = owner;
@@ -53,9 +53,9 @@ contract Master {
         // 0 means ether which is definitely in whitelist
         isToken[address(0)] = true;
 
-        // Create new instance of Sora token
-        xorTokenInstance = new SoraToken();
-        isToken[address(xorTokenInstance)] = true;
+        // Create new instance of the token
+        tokenInstance = new MasterToken(name, symbol, decimals);
+        isToken[address(tokenInstance)] = true;
 
         initialized_ = true;
     }
@@ -307,7 +307,7 @@ contract Master {
     }
 
     /**
-     * Mint new XORToken
+     * Mint new Token
      * @param tokenAddress address to mint
      * @param amount how much to mint
      * @param beneficiary destination address
@@ -328,7 +328,7 @@ contract Master {
     )
     public
     {
-        require(address(xorTokenInstance) == tokenAddress);
+        require(address(tokenInstance) == tokenAddress);
         require(used[txHash] == false);
         require(checkSignatures(
             keccak256(abi.encodePacked(tokenAddress, amount, beneficiary, txHash, from)),
@@ -337,7 +337,7 @@ contract Master {
             s)
         );
 
-        xorTokenInstance.mintTokens(beneficiary, amount);
+        tokenInstance.mintTokens(beneficiary, amount);
         used[txHash] = true;
     }
 }
