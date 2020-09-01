@@ -34,7 +34,6 @@ import jp.co.soramitsu.soranet.eth.provider.EthTokensProvider
 import jp.co.soramitsu.soranet.eth.registration.wallet.EthereumWalletRegistrationHandler
 import jp.co.soramitsu.soranet.eth.sidechain.EthChainHandler
 import jp.co.soramitsu.soranet.eth.sidechain.EthChainListener
-import jp.co.soramitsu.soranet.eth.sidechain.WithdrawalLimitProvider
 import jp.co.soramitsu.soranet.eth.sidechain.util.BasicAuthenticator
 import jp.co.soramitsu.soranet.eth.sidechain.util.DeployHelper
 import jp.co.soramitsu.soranet.eth.sidechain.util.ENDPOINT_ETHEREUM
@@ -54,7 +53,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicLong
 import kotlin.system.exitProcess
 
 /**
@@ -143,10 +141,6 @@ class EthDepositInitialization(
 
     private val isHealthy = AtomicBoolean(true)
 
-    private val withdrawalLimitsNextUpdateTimeHolder = AtomicLong()
-
-    private val tokenSmartContract = deployHelper.loadTokenSmartContract(ethDepositConfig.xorTokenAddress)
-
     init {
         logger.info {
             "Init deposit ethAddress=" +
@@ -210,17 +204,6 @@ class EthDepositInitialization(
             web3jExecutorService
         )
 
-        val withdrawalLimitProvider = WithdrawalLimitProvider(
-            queryHelper,
-            withdrawalIrohaConsumer,
-            withdrawalLimitsNextUpdateTimeHolder,
-            ethDepositConfig.withdrawalLimitStorageAccount,
-            XOR_LIMITS_TIME_KEY,
-            XOR_LIMITS_VALUE_KEY,
-            tokenSmartContract,
-            ethDepositConfig.xorExchangeContractAddress
-        )
-
         /** List of all observable wallets */
         val ethHandler = EthChainHandler(
             web3,
@@ -228,8 +211,7 @@ class EthDepositInitialization(
             ethWalletProvider,
             ethTokensProvider,
             ethNotificationMqProducer,
-            masterContractAbi,
-            withdrawalLimitProvider
+            masterContractAbi
         )
         return EthChainListener(
             web3,

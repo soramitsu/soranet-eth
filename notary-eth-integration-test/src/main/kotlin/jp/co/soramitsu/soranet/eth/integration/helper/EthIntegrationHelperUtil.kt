@@ -113,8 +113,7 @@ object EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
     override val configHelper by lazy {
         EthConfigHelper(
             accountHelper,
-            masterContract.contractAddress,
-            tokenAddress
+            masterContract.contractAddress
         )
     }
 
