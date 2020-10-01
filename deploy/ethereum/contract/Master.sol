@@ -8,6 +8,9 @@ import "./MasterToken.sol";
  */
 contract Master {
     bool internal initialized_;
+    bool internal enabled_;
+    bytes32 public proof;
+    uint256 public proofReward;
     address public owner_;
     mapping(address => bool) public isPeer;
     uint public peersCount;
@@ -21,17 +24,19 @@ contract Master {
 
     event Withdrawal(bytes32 txHash);
 
+    event EnableContract(address provider, bytes32 proof);
+
     /**
      * Constructor. Sets contract owner to contract creator.
      */
-    constructor(address[] memory initialPeers, string memory name, string memory symbol, uint8 decimals, address beneficiary, uint256 supply) public {
-        initialize(msg.sender, initialPeers, name, symbol, decimals, beneficiary, supply);
+    constructor(address[] memory initialPeers, string memory name, string memory symbol, uint8 decimals, address beneficiary, uint256 supply, uint256 reward) public {
+        initialize(msg.sender, initialPeers, name, symbol, decimals, beneficiary, supply, reward);
     }
 
     /**
      * Initialization of smart contract.
      */
-    function initialize(address owner, address[] memory initialPeers, string memory name, string memory symbol, uint8 decimals, address beneficiary, uint256 supply) public {
+    function initialize(address owner, address[] memory initialPeers, string memory name, string memory symbol, uint8 decimals, address beneficiary, uint256 supply, uint256 reward) public {
         require(!initialized_);
 
         owner_ = owner;
@@ -46,6 +51,8 @@ contract Master {
         tokenInstance = new MasterToken(name, symbol, decimals, beneficiary, supply);
         isToken[address(tokenInstance)] = true;
 
+        proofReward = reward;
+
         initialized_ = true;
     }
 
@@ -54,6 +61,14 @@ contract Master {
      */
     modifier onlyOwner() {
         require(isOwner());
+        _;
+    }
+
+    /**
+     * @dev Throws if called when the contract is disabled.
+     */
+    modifier enabled() {
+        require(enabled_ == true);
         _;
     }
 
@@ -69,6 +84,29 @@ contract Master {
      */
     function() external payable {
         require(msg.data.length == 0);
+    }
+
+    function submitProof(
+        bytes32 proofArg,
+        uint8[] memory v,
+        bytes32[] memory r,
+        bytes32[] memory s
+    )
+    public
+    {
+
+        require(checkSignatures(
+                keccak256(abi.encodePacked(proofArg)),
+                v,
+                r,
+                s)
+        );
+
+        tokenInstance.mintTokens(msg.sender, proofReward);
+
+        proof = proofArg;
+        enabled_ = true;
+        emit EnableContract(msg.sender, proofArg);
     }
 
     /**
@@ -171,6 +209,7 @@ contract Master {
         address from
     )
     public
+    enabled
     {
         require(checkTokenAddress(tokenAddress));
         require(used[txHash] == false);
@@ -275,6 +314,7 @@ contract Master {
         address from
     )
     public
+    enabled
     {
         require(address(tokenInstance) == tokenAddress);
         require(used[txHash] == false);
