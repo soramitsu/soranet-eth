@@ -20,11 +20,6 @@ contract Master {
     mapping(address => bool) public isToken;
 
     /**
-     * Emit event when master contract does not have enough assets to proceed withdraw
-     */
-    event InsufficientFundsForWithdrawal(address asset, address recipient);
-
-    /**
      * Constructor. Sets contract owner to contract creator.
      */
     constructor(address[] memory initialPeers, string memory name, string memory symbol, uint8 decimals) public {
@@ -63,7 +58,7 @@ contract Master {
     /**
      * @return true if `msg.sender` is the owner of the contract.
      */
-    function isOwner() public view returns(bool) {
+    function isOwner() public view returns (bool) {
         return msg.sender == owner_;
     }
 
@@ -123,10 +118,10 @@ contract Master {
     {
         require(used[txHash] == false);
         require(checkSignatures(
-            keccak256(abi.encodePacked(peerAddress, txHash)),
-            v,
-            r,
-            s)
+                keccak256(abi.encodePacked(peerAddress, txHash)),
+                v,
+                r,
+                s)
         );
 
         removePeer(peerAddress);
@@ -178,29 +173,21 @@ contract Master {
         require(checkTokenAddress(tokenAddress));
         require(used[txHash] == false);
         require(checkSignatures(
-            keccak256(abi.encodePacked(tokenAddress, amount, to, txHash, from)),
-            v,
-            r,
-            s)
+                keccak256(abi.encodePacked(tokenAddress, amount, to, txHash, from)),
+                v,
+                r,
+                s)
         );
 
-        if (tokenAddress == address (0)) {
-            if (address(this).balance < amount) {
-                emit InsufficientFundsForWithdrawal(tokenAddress, to);
-            } else {
-                used[txHash] = true;
-                // untrusted transfer, relies on provided cryptographic proof
-                to.transfer(amount);
-            }
+        if (tokenAddress == address(0)) {
+            used[txHash] = true;
+            // untrusted transfer, relies on provided cryptographic proof
+            to.transfer(amount);
         } else {
             IERC20 coin = IERC20(tokenAddress);
-            if (coin.balanceOf(address (this)) < amount) {
-                emit InsufficientFundsForWithdrawal(tokenAddress, to);
-            } else {
-                used[txHash] = true;
-                // untrusted call, relies on provided cryptographic proof
-                coin.transfer(to, amount);
-            }
+            used[txHash] = true;
+            // untrusted call, relies on provided cryptographic proof
+            coin.transfer(to, amount);
         }
     }
 
@@ -289,10 +276,10 @@ contract Master {
         require(address(tokenInstance) == tokenAddress);
         require(used[txHash] == false);
         require(checkSignatures(
-            keccak256(abi.encodePacked(tokenAddress, amount, beneficiary, txHash, from)),
-            v,
-            r,
-            s)
+                keccak256(abi.encodePacked(tokenAddress, amount, beneficiary, txHash, from)),
+                v,
+                r,
+                s)
         );
 
         tokenInstance.mintTokens(beneficiary, amount);
