@@ -19,6 +19,8 @@ contract Master {
 
     mapping(address => bool) public isToken;
 
+    event Withdrawal(bytes32 txHash);
+
     /**
      * Constructor. Sets contract owner to contract creator.
      */
@@ -189,6 +191,7 @@ contract Master {
             // untrusted call, relies on provided cryptographic proof
             coin.transfer(to, amount);
         }
+        emit Withdrawal(txHash);
     }
 
     /**
@@ -284,5 +287,6 @@ contract Master {
 
         tokenInstance.mintTokens(beneficiary, amount);
         used[txHash] = true;
+        emit Withdrawal(txHash);
     }
 }
