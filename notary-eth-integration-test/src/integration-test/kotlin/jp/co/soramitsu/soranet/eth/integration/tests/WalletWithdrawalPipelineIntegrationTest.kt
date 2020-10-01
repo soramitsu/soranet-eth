@@ -321,18 +321,18 @@ class WalletWithdrawalPipelineIntegrationTest {
             val decimalAmount = BigDecimal(amount, ETH_PRECISION)
             val feeDecimalAmount = BigDecimal(feeAmount, ETH_PRECISION)
             val assetId = "ether#ethereum"
-            val xorAssetId = "xor#sora"
+            val valAssetId = "val#sora"
 
             // add Iroha assets to user
             integrationHelper.addIrohaAssetTo(clientId, assetId, decimalAmount)
-            integrationHelper.addIrohaAssetTo(clientId, xorAssetId, feeDecimalAmount)
+            integrationHelper.addIrohaAssetTo(clientId, valAssetId, feeDecimalAmount)
 
             val initialWithdrawalBalance =
-                integrationHelper.getIrohaAccountBalance(withdrawalAccountId, xorAssetId)
+                integrationHelper.getIrohaAccountBalance(withdrawalAccountId, valAssetId)
             val ininialClientIrohaBalance =
                 integrationHelper.getIrohaAccountBalance(clientId, assetId)
             val initialClientXorBalance =
-                integrationHelper.getIrohaAccountBalance(clientId, xorAssetId)
+                integrationHelper.getIrohaAccountBalance(clientId, valAssetId)
 
             // transfer Ether from user to notary master account
             val txHash = integrationHelper.transferAssetIrohaFromClientWithFee(
@@ -343,7 +343,7 @@ class WalletWithdrawalPipelineIntegrationTest {
                 assetId,
                 toAddress,
                 decimalAmount.toPlainString(),
-                xorAssetId,
+                valAssetId,
                 feeDecimalAmount.toPlainString(),
                 FEE_DESCRIPTION
             )
@@ -360,7 +360,7 @@ class WalletWithdrawalPipelineIntegrationTest {
             // check client XOR balance in Iroha
             assertEquals(
                 initialClientXorBalance.toDouble() - feeDecimalAmount.toDouble(),
-                integrationHelper.getIrohaAccountBalance(clientId, xorAssetId).toDouble()
+                integrationHelper.getIrohaAccountBalance(clientId, valAssetId).toDouble()
             )
 
             // check Ether balance of client in Ethereum

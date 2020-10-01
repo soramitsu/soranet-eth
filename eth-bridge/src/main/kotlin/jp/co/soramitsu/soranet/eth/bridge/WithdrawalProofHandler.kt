@@ -30,7 +30,7 @@ const val WITHDRAWAL_ACCOUNT_PUBLIC_KEY =
  * Class responsible for withdrawal approval for wallet accounts
  */
 class WithdrawalProofHandler(
-    private val withrdawalTriggerAccountId: String,
+    private val withdrawalTriggerAccountId: String,
     private val tokensProvider: EthTokensProvider,
     private val walletsProvider: EthAddressProvider,
     private val deployHelper: DeployHelper,
@@ -41,7 +41,7 @@ class WithdrawalProofHandler(
     private val gson = GsonInstance.get()
 
     init {
-        logger.info { "Wallet Withdrawal: Initialization of WithdrawalProofHandler withrdawalTriggerAccountId=$withrdawalTriggerAccountId" }
+        logger.info { "Wallet Withdrawal: Initialization of WithdrawalProofHandler withrdawalTriggerAccountId=$withdrawalTriggerAccountId" }
     }
 
     private val ethCredential = WalletUtils.loadCredentials(
@@ -61,7 +61,7 @@ class WithdrawalProofHandler(
                 tx.payload.reducedPayload.commandsList
                     .filter { command -> command.hasTransferAsset() }
                     .map { command -> command.transferAsset }
-                    .filter { transfer -> transfer.destAccountId == withrdawalTriggerAccountId }
+                    .filter { transfer -> transfer.destAccountId == withdrawalTriggerAccountId }
                     // check if description is valid Ethereum address
                     .filter { transfer -> WalletUtils.isValidAddress(transfer.description) }
                     .filter { transfer ->
