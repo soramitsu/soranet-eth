@@ -24,14 +24,14 @@ contract Master {
     /**
      * Constructor. Sets contract owner to contract creator.
      */
-    constructor(address[] memory initialPeers, string memory name, string memory symbol, uint8 decimals) public {
-        initialize(msg.sender, initialPeers, name, symbol, decimals);
+    constructor(address[] memory initialPeers, string memory name, string memory symbol, uint8 decimals, address beneficiary, uint256 supply) public {
+        initialize(msg.sender, initialPeers, name, symbol, decimals, beneficiary, supply);
     }
 
     /**
      * Initialization of smart contract.
      */
-    function initialize(address owner, address[] memory initialPeers, string memory name, string memory symbol, uint8 decimals) public {
+    function initialize(address owner, address[] memory initialPeers, string memory name, string memory symbol, uint8 decimals, address beneficiary, uint256 supply) public {
         require(!initialized_);
 
         owner_ = owner;
@@ -43,7 +43,7 @@ contract Master {
         isToken[address(0)] = true;
 
         // Create new instance of the token
-        tokenInstance = new MasterToken(name, symbol, decimals);
+        tokenInstance = new MasterToken(name, symbol, decimals, beneficiary, supply);
         isToken[address(tokenInstance)] = true;
 
         initialized_ = true;
