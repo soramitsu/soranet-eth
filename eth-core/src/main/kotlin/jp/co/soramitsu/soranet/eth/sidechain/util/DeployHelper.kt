@@ -16,6 +16,7 @@ import org.web3j.abi.datatypes.Address
 import org.web3j.abi.datatypes.DynamicArray
 import org.web3j.abi.datatypes.Type
 import org.web3j.abi.datatypes.Utf8String
+import org.web3j.abi.datatypes.generated.Uint256
 import org.web3j.abi.datatypes.generated.Uint8
 import org.web3j.contracts.eip20.generated.ERC20
 import org.web3j.crypto.WalletUtils
@@ -276,7 +277,10 @@ class DeployHelper(
                 DynamicArray<Address>(Address::class.java, peers.map { Address(it) }) as Type<Any>,
                 Utf8String(tokenFullName) as Type<Any>,
                 Utf8String(tokenSymbol) as Type<Any>,
-                Uint8(decimals) as Type<Any>
+                Uint8(decimals) as Type<Any>,
+                Address(beneficiary) as Type<Any>,
+                Uint256(supply) as Type<Any>,
+                Uint256(reward) as Type<Any>
             )
         proxy.upgradeToAndCall(master.contractAddress, encoded, BigInteger.ZERO).send()
 
