@@ -68,7 +68,7 @@ contract Master {
      * @dev Throws if called when the contract is disabled.
      */
     modifier enabled() {
-        require(enabled_ == true);
+        require(enabled_);
         _;
     }
 
@@ -94,7 +94,7 @@ contract Master {
     )
     public
     {
-
+        require(!enabled_, "Proof has been submitted already");
         require(checkSignatures(
                 keccak256(abi.encodePacked(proofArg)),
                 v,

@@ -50,6 +50,21 @@ class MasterTest {
     }
 
     /**
+     * @given deployed master and token contracts
+     * @when a proof is applied for the second time
+     * @then the transaction fails
+     */
+    @Test
+    fun doubleProofSubmission() {
+        Assertions.assertTimeoutPreemptively(timeoutDuration) {
+            cth.supplyProof()
+            Assertions.assertThrows(TransactionException::class.java) {
+                cth.supplyProof()
+            }
+        }
+    }
+
+    /**
      * @given master account deployed
      * @when transfer 300_000_000 WEIs to master account
      * @then balance of master account increased by 300_000_000
@@ -77,6 +92,7 @@ class MasterTest {
         Assertions.assertTimeoutPreemptively(timeoutDuration) {
             master.addToken(token.contractAddress).send()
             cth.transferTokensToMaster(BigInteger.valueOf(5))
+            cth.supplyProof()
             cth.withdraw(BigInteger.valueOf(1))
             Assertions.assertEquals(
                 BigInteger.valueOf(4),
@@ -95,6 +111,7 @@ class MasterTest {
     fun singleNotEnoughSignaturesTokenTest() {
         Assertions.assertTimeoutPreemptively(timeoutDuration) {
             cth.transferTokensToMaster(BigInteger.valueOf(5))
+            cth.supplyProof()
             Assertions.assertThrows(TransactionException::class.java) {
                 cth.withdraw(
                     BigInteger.valueOf(
@@ -115,6 +132,7 @@ class MasterTest {
     fun notEnoughEtherTest() {
         Assertions.assertTimeoutPreemptively(timeoutDuration) {
             cth.sendEthereum(BigInteger.valueOf(5000), master.contractAddress)
+            cth.supplyProof()
             val call =
                 cth.withdraw(
                     BigInteger.valueOf(10000),
@@ -140,6 +158,7 @@ class MasterTest {
     fun notEnoughTokensTest() {
         Assertions.assertTimeoutPreemptively(timeoutDuration) {
             cth.transferTokensToMaster(BigInteger.valueOf(5))
+            cth.supplyProof()
             Assertions.assertThrows(TransactionException::class.java) {
                 cth.withdraw(
                     BigInteger.valueOf(
@@ -161,6 +180,7 @@ class MasterTest {
         Assertions.assertTimeoutPreemptively(timeoutDuration) {
             val initialBalance = cth.getETHBalance(accGreen)
             cth.sendEthereum(BigInteger.valueOf(5000), master.contractAddress)
+            cth.supplyProof()
             cth.withdraw(
                 BigInteger.valueOf(1000),
                 accGreen,
@@ -180,6 +200,26 @@ class MasterTest {
     /**
      * @given deployed master contract
      * @when one peer added to master, 5000 Wei transferred to master,
+     * request to withdraw 1000 Wei is sent to master but no proof supplied
+     * @then call to withdraw fails
+     */
+    @Test
+    fun singleNoProofEtherTestMaster() {
+        Assertions.assertTimeoutPreemptively(timeoutDuration) {
+            cth.sendEthereum(BigInteger.valueOf(5000), master.contractAddress)
+            Assertions.assertThrows(TransactionException::class.java) {
+                cth.withdraw(
+                    BigInteger.valueOf(1000),
+                    accGreen,
+                    etherAddress
+                )
+            }
+        }
+    }
+
+    /**
+     * @given deployed master contract
+     * @when one peer added to master, 5000 Wei transferred to master,
      * request to withdraw 10000 Wei is sent to master - withdrawal fails
      * then add 5000 Wei to master (simulate vacuum process) and
      * request to withdraw 10000 Wei is sent to master
@@ -190,6 +230,7 @@ class MasterTest {
         Assertions.assertTimeoutPreemptively(timeoutDuration) {
             val initialBalance = cth.getETHBalance(accGreen)
             cth.sendEthereum(BigInteger.valueOf(5000), master.contractAddress)
+            cth.supplyProof()
             val call =
                 cth.withdraw(
                     BigInteger.valueOf(10000),
@@ -230,6 +271,7 @@ class MasterTest {
     fun noPeersWithdraw() {
         Assertions.assertTimeoutPreemptively(timeoutDuration) {
             cth.transferTokensToMaster(BigInteger.valueOf(5))
+            cth.supplyProof()
             Assertions.assertThrows(TransactionException::class.java) {
                 cth.withdraw(
                     BigInteger.valueOf(
@@ -250,7 +292,7 @@ class MasterTest {
     fun differentVRS() {
         Assertions.assertTimeoutPreemptively(timeoutDuration) {
             cth.transferTokensToMaster(BigInteger.valueOf(5))
-
+            cth.supplyProof()
             val amount = BigInteger.valueOf(1)
             val finalHash =
                 hashToWithdraw(
@@ -289,7 +331,7 @@ class MasterTest {
     fun sameSignatures() {
         Assertions.assertTimeoutPreemptively(timeoutDuration) {
             cth.transferTokensToMaster(BigInteger.valueOf(5))
-
+            cth.supplyProof()
             val amount = BigInteger.valueOf(1)
             val finalHash =
                 hashToWithdraw(
@@ -327,7 +369,7 @@ class MasterTest {
     fun wrongPeerSignature() {
         Assertions.assertTimeoutPreemptively(timeoutDuration) {
             cth.transferTokensToMaster(BigInteger.valueOf(5))
-
+            cth.supplyProof()
             val amount = BigInteger.valueOf(1)
             val finalHash =
                 hashToWithdraw(
@@ -364,7 +406,7 @@ class MasterTest {
     fun invalidSignature() {
         Assertions.assertTimeoutPreemptively(timeoutDuration) {
             cth.transferTokensToMaster(BigInteger.valueOf(5))
-
+            cth.supplyProof()
             val amount = BigInteger.valueOf(1)
             val finalHash =
                 hashToWithdraw(
@@ -404,6 +446,7 @@ class MasterTest {
         Assertions.assertTimeoutPreemptively(timeoutDuration) {
             master.addToken(token.contractAddress).send()
             cth.transferTokensToMaster(BigInteger.valueOf(5))
+            cth.supplyProof()
             cth.withdraw(BigInteger.valueOf(1))
             Assertions.assertEquals(
                 BigInteger.valueOf(4),
@@ -472,6 +515,7 @@ class MasterTest {
             )
 
             cth.sendEthereum(BigInteger.valueOf(5000), master.contractAddress)
+            cth.supplyProof()
 
             val finalHash =
                 hashToWithdraw(
@@ -540,6 +584,8 @@ class MasterTest {
 
             val sigs = cth.prepareSignatures(sigCount, keyPairs, finalHash)
 
+            cth.supplyProof()
+
             master.withdraw(
                 etherAddress,
                 BigInteger.valueOf(amountToSend.toLong()),
@@ -599,6 +645,8 @@ class MasterTest {
             val sigs =
                 cth.prepareSignatures(realSigCount, keyPairs.subList(0, realSigCount), finalHash)
 
+            cth.supplyProof()
+
             master.withdraw(
                 tokenAddress,
                 BigInteger.valueOf(amountToSend.toLong()),
@@ -656,6 +704,8 @@ class MasterTest {
             val sigs =
                 cth.prepareSignatures(realSigCount, keyPairs.subList(0, realSigCount), finalHash)
 
+            cth.supplyProof()
+
             Assertions.assertThrows(TransactionException::class.java) {
                 master.withdraw(
                     tokenAddress,
@@ -705,6 +755,8 @@ class MasterTest {
                 )
 
             val sigs = cth.prepareSignatures(sigCount, keyPairs, finalHash)
+
+            cth.supplyProof()
 
             master.withdraw(
                 tokenAddress,
@@ -764,6 +816,8 @@ class MasterTest {
             val sigs =
                 cth.prepareSignatures(realSigCount, keyPairs.subList(0, realSigCount), finalHash)
 
+            cth.supplyProof()
+
             master.withdraw(
                 tokenAddress,
                 BigInteger.valueOf(amountToSend.toLong()),
@@ -820,6 +874,8 @@ class MasterTest {
 
             val sigs =
                 cth.prepareSignatures(realSigCount, keyPairs.subList(0, realSigCount), finalHash)
+
+            cth.supplyProof()
 
             Assertions.assertThrows(TransactionException::class.java) {
                 master.withdraw(
@@ -1143,6 +1199,8 @@ class MasterTest {
             )
             val sigs = cth.prepareSignatures(realSigCount, keyPairs.subList(0, realSigCount), finalHash)
 
+            cth.supplyProof()
+
             Assertions.assertTrue(
                 master.mintTokensByPeers(
                     xorAddress,
@@ -1197,6 +1255,8 @@ class MasterTest {
             val sigs =
                 cth.prepareSignatures(realSigCount, keyPairs.subList(0, realSigCount), finalHash)
 
+            cth.supplyProof()
+
             Assertions.assertTrue(
                 master.mintTokensByPeers(
                     xorToken,
@@ -1218,6 +1278,54 @@ class MasterTest {
     }
 
     /**
+     * @given master and sora token
+     * @when try to mint without proof supplied
+     * @then minting fails
+     */
+    @Test
+    fun mintNewTokens4of4peersNoProof() {
+        Assertions.assertTimeoutPreemptively(timeoutDuration) {
+            val sigCount = 4
+            val realSigCount = 4
+
+            val beneficiary = "0xbcBCeb4D66065B7b34d1B90f4fa572829F2c6D5c"
+            val amountToSend = 1000
+
+            val (keyPairs, peers) = cth.getKeyPairsAndPeers(sigCount)
+
+            val master = cth.deployHelper.deployUpgradableMasterSmartContract(
+                peers,
+                TOKEN_NAME,
+                TOKEN_SYMBOL,
+                TOKEN_DECIMALS
+            )
+            val xorAddress = master.tokenInstance().send()
+
+            val finalHash = hashToMint(
+                xorAddress,
+                amountToSend.toString(),
+                beneficiary,
+                cth.defaultIrohaHash,
+                cth.master.contractAddress
+            )
+            val sigs = cth.prepareSignatures(realSigCount, keyPairs.subList(0, realSigCount), finalHash)
+
+            Assertions.assertThrows(TransactionException::class.java) {
+                master.mintTokensByPeers(
+                    xorAddress,
+                    BigInteger.valueOf(amountToSend.toLong()),
+                    beneficiary,
+                    cth.defaultByteHash,
+                    sigs.vv,
+                    sigs.rr,
+                    sigs.ss,
+                    cth.master.contractAddress
+                ).send().isStatusOK
+            }
+        }
+    }
+
+    /**
      * @given master contract and sora token and mint is called with Iroha hash
      * @when mint is called with the same hash
      * @then mint call fails
@@ -1227,6 +1335,8 @@ class MasterTest {
         Assertions.assertTimeoutPreemptively(timeoutDuration) {
             val beneficiary = "0xbcBCeb4D66065B7b34d1B90f4fa572829F2c6D5c"
             val amountToSend: Long = 1000
+
+            cth.supplyProof()
 
             val result = cth.mintByPeer(beneficiary, amountToSend).isStatusOK
 
