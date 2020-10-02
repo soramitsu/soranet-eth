@@ -12,6 +12,9 @@ import jp.co.soramitsu.soranet.eth.helper.hexStringToByteArray
 import jp.co.soramitsu.soranet.eth.integration.helper.ContractTestHelper
 import jp.co.soramitsu.soranet.eth.integration.helper.ContractTestHelper.Companion.TOKEN_DECIMALS
 import jp.co.soramitsu.soranet.eth.integration.helper.ContractTestHelper.Companion.TOKEN_NAME
+import jp.co.soramitsu.soranet.eth.integration.helper.ContractTestHelper.Companion.TOKEN_REWARD
+import jp.co.soramitsu.soranet.eth.integration.helper.ContractTestHelper.Companion.TOKEN_SUPPLY
+import jp.co.soramitsu.soranet.eth.integration.helper.ContractTestHelper.Companion.TOKEN_SUPPLY_BENEFICIARY
 import jp.co.soramitsu.soranet.eth.integration.helper.ContractTestHelper.Companion.TOKEN_SYMBOL
 import jp.co.soramitsu.soranet.eth.sidechain.util.hashToAddAndRemovePeer
 import jp.co.soramitsu.soranet.eth.sidechain.util.hashToMint
@@ -511,7 +514,10 @@ class MasterTest {
                 peers,
                 TOKEN_NAME,
                 TOKEN_SYMBOL,
-                TOKEN_DECIMALS
+                TOKEN_DECIMALS,
+                TOKEN_SUPPLY_BENEFICIARY,
+                TOKEN_SUPPLY,
+                TOKEN_REWARD
             )
 
             cth.sendEthereum(BigInteger.valueOf(5000), master.contractAddress)
@@ -568,7 +574,10 @@ class MasterTest {
                 peers.dropLast(1),
                 TOKEN_NAME,
                 TOKEN_SYMBOL,
-                TOKEN_DECIMALS
+                TOKEN_DECIMALS,
+                TOKEN_SUPPLY_BENEFICIARY,
+                TOKEN_SUPPLY,
+                TOKEN_REWARD
             )
 
             cth.sendEthereum(BigInteger.valueOf(5000), master.contractAddress)
@@ -628,7 +637,10 @@ class MasterTest {
                 peers,
                 TOKEN_NAME,
                 TOKEN_SYMBOL,
-                TOKEN_DECIMALS
+                TOKEN_DECIMALS,
+                TOKEN_SUPPLY_BENEFICIARY,
+                TOKEN_SUPPLY,
+                TOKEN_REWARD
             )
 
             cth.sendEthereum(BigInteger.valueOf(5000), master.contractAddress)
@@ -689,7 +701,10 @@ class MasterTest {
                 peers,
                 TOKEN_NAME,
                 TOKEN_SYMBOL,
-                TOKEN_DECIMALS
+                TOKEN_DECIMALS,
+                TOKEN_SUPPLY_BENEFICIARY,
+                TOKEN_SUPPLY,
+                TOKEN_REWARD
             )
 
             val finalHash =
@@ -740,7 +755,10 @@ class MasterTest {
                 peers,
                 TOKEN_NAME,
                 TOKEN_SYMBOL,
-                TOKEN_DECIMALS
+                TOKEN_DECIMALS,
+                TOKEN_SUPPLY_BENEFICIARY,
+                TOKEN_SUPPLY,
+                TOKEN_REWARD
             )
 
             cth.sendEthereum(BigInteger.valueOf(5000), master.contractAddress)
@@ -800,7 +818,10 @@ class MasterTest {
                 peers,
                 TOKEN_NAME,
                 TOKEN_SYMBOL,
-                TOKEN_DECIMALS
+                TOKEN_DECIMALS,
+                TOKEN_SUPPLY_BENEFICIARY,
+                TOKEN_SUPPLY,
+                TOKEN_REWARD
             )
             cth.sendEthereum(BigInteger.valueOf(5000), master.contractAddress)
 
@@ -860,7 +881,10 @@ class MasterTest {
                 peers,
                 TOKEN_NAME,
                 TOKEN_SYMBOL,
-                TOKEN_DECIMALS
+                TOKEN_DECIMALS,
+                TOKEN_SUPPLY_BENEFICIARY,
+                TOKEN_SUPPLY,
+                TOKEN_REWARD
             )
 
             val finalHash =
@@ -915,7 +939,10 @@ class MasterTest {
                 peers,
                 TOKEN_NAME,
                 TOKEN_SYMBOL,
-                TOKEN_DECIMALS
+                TOKEN_DECIMALS,
+                TOKEN_SUPPLY_BENEFICIARY,
+                TOKEN_SUPPLY,
+                TOKEN_REWARD
             )
 
             val sigs =
@@ -960,7 +987,10 @@ class MasterTest {
                 peers,
                 TOKEN_NAME,
                 TOKEN_SYMBOL,
-                TOKEN_DECIMALS
+                TOKEN_DECIMALS,
+                TOKEN_SUPPLY_BENEFICIARY,
+                TOKEN_SUPPLY,
+                TOKEN_REWARD
             )
 
             val sigs =
@@ -1006,7 +1036,10 @@ class MasterTest {
                 peers,
                 TOKEN_NAME,
                 TOKEN_SYMBOL,
-                TOKEN_DECIMALS
+                TOKEN_DECIMALS,
+                TOKEN_SUPPLY_BENEFICIARY,
+                TOKEN_SUPPLY,
+                TOKEN_REWARD
             )
 
             val sigs =
@@ -1089,7 +1122,10 @@ class MasterTest {
                 peers,
                 TOKEN_NAME,
                 TOKEN_SYMBOL,
-                TOKEN_DECIMALS
+                TOKEN_DECIMALS,
+                TOKEN_SUPPLY_BENEFICIARY,
+                TOKEN_SUPPLY,
+                TOKEN_REWARD
             )
 
             val sigs =
@@ -1133,7 +1169,10 @@ class MasterTest {
                 withPeerToRemove,
                 TOKEN_NAME,
                 TOKEN_SYMBOL,
-                TOKEN_DECIMALS
+                TOKEN_DECIMALS,
+                TOKEN_SUPPLY_BENEFICIARY,
+                TOKEN_SUPPLY,
+                TOKEN_REWARD
             )
 
             withPeerToRemove.forEach { oldPeer ->
@@ -1186,7 +1225,10 @@ class MasterTest {
                 peers,
                 TOKEN_NAME,
                 TOKEN_SYMBOL,
-                TOKEN_DECIMALS
+                TOKEN_DECIMALS,
+                TOKEN_SUPPLY_BENEFICIARY,
+                TOKEN_SUPPLY,
+                TOKEN_REWARD
             )
             val xorAddress = master.tokenInstance().send()
 
@@ -1241,7 +1283,10 @@ class MasterTest {
                 peers.dropLast(1),
                 TOKEN_NAME,
                 TOKEN_SYMBOL,
-                TOKEN_DECIMALS
+                TOKEN_DECIMALS,
+                TOKEN_SUPPLY_BENEFICIARY,
+                TOKEN_SUPPLY,
+                TOKEN_REWARD
             )
             val xorToken = master.tokenInstance().send()
 
@@ -1297,7 +1342,10 @@ class MasterTest {
                 peers,
                 TOKEN_NAME,
                 TOKEN_SYMBOL,
-                TOKEN_DECIMALS
+                TOKEN_DECIMALS,
+                TOKEN_SUPPLY_BENEFICIARY,
+                TOKEN_SUPPLY,
+                TOKEN_REWARD
             )
             val xorAddress = master.tokenInstance().send()
 

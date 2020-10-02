@@ -218,10 +218,13 @@ class DeployHelper(
      * @return master smart contract object
      */
     fun deployMasterSmartContract(
-            peers: List<String>,
-            tokenFullName: String,
-            tokenSymbol: String,
-            decimals: BigInteger
+        peers: List<String>,
+        tokenFullName: String,
+        tokenSymbol: String,
+        decimals: BigInteger,
+        beneficiary: String,
+        supply: BigInteger,
+        reward: BigInteger
     ): Master {
         val master = Master.deploy(
             web3,
@@ -230,7 +233,10 @@ class DeployHelper(
             peers,
             tokenFullName,
             tokenSymbol,
-            decimals
+            decimals,
+            beneficiary,
+            supply,
+            reward
         ).send()
         logger.info { "Master smart contract ${master.contractAddress} was deployed" }
         return master
@@ -240,13 +246,24 @@ class DeployHelper(
      * Deploy [Master] via [OwnedUpgradeabilityProxy].
      */
     fun deployUpgradableMasterSmartContract(
-            peers: List<String>,
-            tokenFullName: String,
-            tokenSymbol: String,
-            decimals: BigInteger
+        peers: List<String>,
+        tokenFullName: String,
+        tokenSymbol: String,
+        decimals: BigInteger,
+        beneficiary: String,
+        supply: BigInteger,
+        reward: BigInteger
     ): Master {
         // deploy implementation
-        val master = deployMasterSmartContract(peers, tokenFullName, tokenSymbol, decimals)
+        val master = deployMasterSmartContract(
+            peers,
+            tokenFullName,
+            tokenSymbol,
+            decimals,
+            beneficiary,
+            supply,
+            reward
+        )
 
         // deploy proxy
         val proxy = deployOwnedUpgradeabilityProxy()
@@ -278,8 +295,8 @@ class DeployHelper(
     fun loadMasterContract(address: String): Master {
         return Master.load(
             address,
-                web3,
-                defaultTransactionManager,
+            web3,
+            defaultTransactionManager,
             StaticGasProvider(gasPrice, gasLimit)
         )
     }

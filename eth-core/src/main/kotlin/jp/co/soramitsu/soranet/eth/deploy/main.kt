@@ -33,7 +33,7 @@ fun main(args: Array<String>) {
     val toList = args.toList()
     logger.info { "Run predeploy with notary addresses: $toList" }
     val size = args.size
-    if (size < 4) {
+    if (size < 7) {
         logger.error { "No notary ethereum addresses and token arguments are provided." }
         exitProcess(1)
     }
@@ -53,8 +53,11 @@ fun main(args: Array<String>) {
 
             val master = deployHelper.deployUpgradableMasterSmartContract(
                 toList.subList(0, size - 4),
+                toList[size - 6],
+                toList[size - 5],
+                toList[size - 4].toBigInteger(),
                 toList[size - 3],
-                toList[size - 2],
+                toList[size - 2].toBigInteger(),
                 toList[size - 1].toBigInteger()
             )
             saveContract(
