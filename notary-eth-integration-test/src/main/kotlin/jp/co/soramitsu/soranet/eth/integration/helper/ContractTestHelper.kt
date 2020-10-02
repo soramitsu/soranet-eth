@@ -58,9 +58,7 @@ class ContractTestHelper {
 
     val etherAddress = "0x0000000000000000000000000000000000000000"
     val defaultIrohaHash = Hash.sha3(String.format("%064x", BigInteger.valueOf(12345)))
-    val defaultProof = Hash.sha3(
-        String.format("%064x", BigInteger.valueOf(1234567891012302385)).replace("0x", "")
-    )
+    val defaultProof = Hash.sha3(String.format("%064x", BigInteger.valueOf(1234567891012302385)))
     val defaultByteHash = hexStringToByteArray(defaultIrohaHash)
     val defaultByteProof = hexStringToByteArray(defaultProof)
 
@@ -195,7 +193,7 @@ class ContractTestHelper {
     }
 
     fun supplyProof(): TransactionReceipt {
-        val signatures = prepareSignatures(1, listOf(keypair), defaultProof)
+        val signatures = prepareSignatures(1, listOf(keypair), hashToProve(defaultProof))
         return master.submitProof(
             defaultByteProof,
             signatures.vv,
