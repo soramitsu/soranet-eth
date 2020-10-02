@@ -6,7 +6,6 @@
 package jp.co.soramitsu.soranet.eth.integration.helper
 
 import com.d3.commons.config.loadConfigs
-import com.d3.commons.util.getRandomString
 import jp.co.soramitsu.soranet.eth.config.EthereumPasswords
 import jp.co.soramitsu.soranet.eth.contract.MasterToken
 import jp.co.soramitsu.soranet.eth.helper.hexStringToByteArray
@@ -59,7 +58,11 @@ class ContractTestHelper {
 
     val etherAddress = "0x0000000000000000000000000000000000000000"
     val defaultIrohaHash = Hash.sha3(String.format("%064x", BigInteger.valueOf(12345)))
+    val defaultProof = Hash.sha3(
+        String.format("%064x", BigInteger.valueOf(1234567891012302385)).replace("0x", "")
+    )
     val defaultByteHash = hexStringToByteArray(defaultIrohaHash)
+    val defaultByteProof = hexStringToByteArray(defaultProof)
 
     data class SigsData(
         val vv: ArrayList<BigInteger>,
@@ -192,10 +195,9 @@ class ContractTestHelper {
     }
 
     fun supplyProof(): TransactionReceipt {
-        val proof = randomProof()
-        val signatures = prepareSignatures(1, listOf(keypair), proof)
+        val signatures = prepareSignatures(1, listOf(keypair), defaultProof)
         return master.submitProof(
-            hexStringToByteArray(proof),
+            defaultByteProof,
             signatures.vv,
             signatures.rr,
             signatures.ss
@@ -255,12 +257,6 @@ class ContractTestHelper {
     fun deployFailer(): String {
         return deployHelper.deployFailerContract().contractAddress
     }
-
-    /**
-     * Calculates keccak-256 hash of random string
-     * @return keccak-256 hash
-     */
-    fun randomProof() = Hash.sha3(String.getRandomString(64))
 
     companion object {
         const val TOKEN_NAME = "Test Token"
