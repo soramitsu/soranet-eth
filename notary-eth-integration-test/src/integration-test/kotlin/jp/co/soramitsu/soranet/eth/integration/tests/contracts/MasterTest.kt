@@ -136,18 +136,13 @@ class MasterTest {
         Assertions.assertTimeoutPreemptively(timeoutDuration) {
             cth.sendEthereum(BigInteger.valueOf(5000), master.contractAddress)
             cth.supplyProof()
-            val call =
+            Assertions.assertThrows(TransactionException::class.java) {
                 cth.withdraw(
                     BigInteger.valueOf(10000),
                     accGreen,
                     etherAddress
                 )
-            Assertions.assertEquals(
-                "0x" + "0".repeat(24) +
-                        etherAddress.slice(2 until etherAddress.length),
-                call.logs[0].data.subSequence(0, 66)
-            )
-            Assertions.assertEquals(accGreen, "0x" + call.logs[0].data.subSequence(90, 130))
+            }
         }
     }
 
@@ -234,18 +229,13 @@ class MasterTest {
             val initialBalance = cth.getETHBalance(accGreen)
             cth.sendEthereum(BigInteger.valueOf(5000), master.contractAddress)
             cth.supplyProof()
-            val call =
+            Assertions.assertThrows(TransactionException::class.java) {
                 cth.withdraw(
                     BigInteger.valueOf(10000),
                     accGreen,
                     etherAddress
                 )
-            Assertions.assertEquals(
-                "0x" + "0".repeat(24) +
-                        etherAddress.slice(2 until etherAddress.length),
-                call.logs[0].data.subSequence(0, 66)
-            )
-            Assertions.assertEquals(accGreen, "0x" + call.logs[0].data.subSequence(90, 130))
+            }
 
             cth.sendEthereum(BigInteger.valueOf(5000), master.contractAddress)
             cth.withdraw(
@@ -521,7 +511,7 @@ class MasterTest {
             )
 
             cth.sendEthereum(BigInteger.valueOf(5000), master.contractAddress)
-            cth.supplyProof()
+            cth.supplyProof(sigCount, keyPairs, master)
 
             val finalHash =
                 hashToWithdraw(
@@ -593,7 +583,7 @@ class MasterTest {
 
             val sigs = cth.prepareSignatures(sigCount, keyPairs, finalHash)
 
-            cth.supplyProof()
+            cth.supplyProof(sigCount, keyPairs, master)
 
             master.withdraw(
                 etherAddress,
@@ -657,7 +647,7 @@ class MasterTest {
             val sigs =
                 cth.prepareSignatures(realSigCount, keyPairs.subList(0, realSigCount), finalHash)
 
-            cth.supplyProof()
+            cth.supplyProof(realSigCount, keyPairs, master)
 
             master.withdraw(
                 tokenAddress,
@@ -774,7 +764,7 @@ class MasterTest {
 
             val sigs = cth.prepareSignatures(sigCount, keyPairs, finalHash)
 
-            cth.supplyProof()
+            cth.supplyProof(sigCount, keyPairs, master)
 
             master.withdraw(
                 tokenAddress,
@@ -837,7 +827,7 @@ class MasterTest {
             val sigs =
                 cth.prepareSignatures(realSigCount, keyPairs.subList(0, realSigCount), finalHash)
 
-            cth.supplyProof()
+            cth.supplyProof(realSigCount, keyPairs, master)
 
             master.withdraw(
                 tokenAddress,
@@ -1241,7 +1231,7 @@ class MasterTest {
             )
             val sigs = cth.prepareSignatures(realSigCount, keyPairs.subList(0, realSigCount), finalHash)
 
-            cth.supplyProof()
+            cth.supplyProof(realSigCount, keyPairs, master)
 
             Assertions.assertTrue(
                 master.mintTokensByPeers(
@@ -1300,7 +1290,7 @@ class MasterTest {
             val sigs =
                 cth.prepareSignatures(realSigCount, keyPairs.subList(0, realSigCount), finalHash)
 
-            cth.supplyProof()
+            cth.supplyProof(realSigCount - 1, keyPairs, master)
 
             Assertions.assertTrue(
                 master.mintTokensByPeers(

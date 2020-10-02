@@ -7,6 +7,7 @@ package jp.co.soramitsu.soranet.eth.integration.helper
 
 import com.d3.commons.config.loadConfigs
 import jp.co.soramitsu.soranet.eth.config.EthereumPasswords
+import jp.co.soramitsu.soranet.eth.contract.Master
 import jp.co.soramitsu.soranet.eth.contract.MasterToken
 import jp.co.soramitsu.soranet.eth.helper.hexStringToByteArray
 import jp.co.soramitsu.soranet.eth.sidechain.util.*
@@ -192,9 +193,13 @@ class ContractTestHelper {
         ).send()
     }
 
-    fun supplyProof(): TransactionReceipt {
-        val signatures = prepareSignatures(1, listOf(keypair), hashToProve(defaultProof))
-        return master.submitProof(
+    fun supplyProof(
+        peers: Int = 1,
+        peerKeys: List<ECKeyPair> = listOf(keypair),
+        contract: Master = master
+    ): TransactionReceipt {
+        val signatures = prepareSignatures(peers, peerKeys, hashToProve(defaultProof))
+        return contract.submitProof(
             defaultByteProof,
             signatures.vv,
             signatures.rr,
