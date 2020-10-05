@@ -264,7 +264,7 @@ class ContractTestHelper {
     companion object {
         const val TOKEN_NAME = "Test Token"
         const val TOKEN_SYMBOL = "TST"
-        val TOKEN_SUPPLY = BigInteger.ZERO
+        val TOKEN_SUPPLY = BigInteger.TWO
         val TOKEN_REWARD = BigInteger.TEN
         const val TOKEN_SUPPLY_BENEFICIARY = "0x0000000000000000000000000000000000000001"
         val TOKEN_DECIMALS: BigInteger = BigInteger.valueOf(18)
