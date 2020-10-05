@@ -61,7 +61,7 @@ class MasterTest {
     fun correctDeployment() {
         Assertions.assertTimeoutPreemptively(timeoutDuration) {
             Assertions.assertEquals(
-                token.balanceOf(TOKEN_SUPPLY_BENEFICIARY),
+                token.balanceOf(TOKEN_SUPPLY_BENEFICIARY).send(),
                 TOKEN_SUPPLY
             )
         }
@@ -77,7 +77,7 @@ class MasterTest {
         Assertions.assertTimeoutPreemptively(timeoutDuration) {
             cth.supplyProof()
             Assertions.assertEquals(
-                token.balanceOf(accMain),
+                token.balanceOf(accMain).send(),
                 TOKEN_REWARD
             )
         }
