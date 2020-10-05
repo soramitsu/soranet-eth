@@ -52,7 +52,7 @@ fun main(args: Array<String>) {
                 .build()
 
             val master = deployHelper.deployUpgradableMasterSmartContract(
-                toList.subList(0, size - 4),
+                toList.subList(0, size - 6),
                 toList[size - 6],
                 toList[size - 5],
                 toList[size - 4].toBigInteger(),
