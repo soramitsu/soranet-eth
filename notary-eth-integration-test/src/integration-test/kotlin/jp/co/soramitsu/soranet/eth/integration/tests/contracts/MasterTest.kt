@@ -8,6 +8,7 @@ package jp.co.soramitsu.soranet.eth.integration.tests.contracts
 import integration.helper.IrohaConfigHelper
 import jp.co.soramitsu.soranet.eth.contract.BasicCoin
 import jp.co.soramitsu.soranet.eth.contract.Master
+import jp.co.soramitsu.soranet.eth.contract.MasterToken
 import jp.co.soramitsu.soranet.eth.helper.hexStringToByteArray
 import jp.co.soramitsu.soranet.eth.integration.helper.ContractTestHelper
 import jp.co.soramitsu.soranet.eth.integration.helper.ContractTestHelper.Companion.TOKEN_DECIMALS
@@ -33,6 +34,7 @@ import kotlin.test.assertEquals
 class MasterTest {
     private lateinit var cth: ContractTestHelper
     private lateinit var master: Master
+    private lateinit var masterToken: MasterToken
     private lateinit var token: BasicCoin
     private lateinit var accMain: String
     private lateinit var accGreen: String
@@ -45,6 +47,7 @@ class MasterTest {
     fun setup() {
         cth = ContractTestHelper()
         master = cth.master
+        masterToken = cth.masterToken
         token = cth.token
         accMain = cth.accMain
         accGreen = cth.accGreen
@@ -61,8 +64,12 @@ class MasterTest {
     fun correctDeployment() {
         Assertions.assertTimeoutPreemptively(timeoutDuration) {
             Assertions.assertEquals(
-                token.balanceOf(TOKEN_SUPPLY_BENEFICIARY).send(),
-                TOKEN_SUPPLY
+                TOKEN_SUPPLY,
+                masterToken.totalSupply().send()
+            )
+            Assertions.assertEquals(
+                TOKEN_SUPPLY,
+                masterToken.balanceOf(TOKEN_SUPPLY_BENEFICIARY).send()
             )
         }
     }
@@ -75,10 +82,11 @@ class MasterTest {
     @Test
     fun correctProofSubmission() {
         Assertions.assertTimeoutPreemptively(timeoutDuration) {
+            val balanceBeforeProof = masterToken.balanceOf(accMain).send()
             cth.supplyProof()
             Assertions.assertEquals(
-                token.balanceOf(accMain).send(),
-                TOKEN_REWARD
+                balanceBeforeProof.add(TOKEN_REWARD),
+                masterToken.balanceOf(accMain).send()
             )
         }
     }

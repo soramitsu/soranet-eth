@@ -56,6 +56,9 @@ class ContractTestHelper {
     val tokenAddress by lazy {
         master.tokenInstance().send()
     }
+    val masterToken by lazy {
+        deployHelper.loadSpecificTokenSmartContract(tokenAddress)
+    }
 
     val etherAddress = "0x0000000000000000000000000000000000000000"
     val defaultIrohaHash = Hash.sha3(String.format("%064x", BigInteger.valueOf(12345)))
@@ -264,8 +267,8 @@ class ContractTestHelper {
     companion object {
         const val TOKEN_NAME = "Test Token"
         const val TOKEN_SYMBOL = "TST"
-        val TOKEN_SUPPLY = BigInteger.TWO
-        val TOKEN_REWARD = BigInteger.TEN
+        val TOKEN_SUPPLY = BigInteger.valueOf(10000000)
+        val TOKEN_REWARD = BigInteger.valueOf(100)
         const val TOKEN_SUPPLY_BENEFICIARY = "0x0000000000000000000000000000000000000001"
         val TOKEN_DECIMALS: BigInteger = BigInteger.valueOf(18)
     }
