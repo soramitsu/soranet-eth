@@ -54,6 +54,37 @@ class MasterTest {
 
     /**
      * @given deployed master and token contracts
+     * @when the transaction committed
+     * @then the supply is minted to the beneficiary
+     */
+    @Test
+    fun correctDeployment() {
+        Assertions.assertTimeoutPreemptively(timeoutDuration) {
+            Assertions.assertEquals(
+                token.balanceOf(TOKEN_SUPPLY_BENEFICIARY),
+                TOKEN_SUPPLY
+            )
+        }
+    }
+
+    /**
+     * @given deployed master and token contracts
+     * @when a correct proof is submitted
+     * @then the transaction applied and the reward is given out
+     */
+    @Test
+    fun correctProofSubmission() {
+        Assertions.assertTimeoutPreemptively(timeoutDuration) {
+            cth.supplyProof()
+            Assertions.assertEquals(
+                token.balanceOf(accMain),
+                TOKEN_REWARD
+            )
+        }
+    }
+
+    /**
+     * @given deployed master and token contracts
      * @when a proof is applied for the second time
      * @then the transaction fails
      */
