@@ -7,6 +7,7 @@ package jp.co.soramitsu.soranet.eth.integration.helper
 
 import com.d3.commons.config.loadConfigs
 import jp.co.soramitsu.soranet.eth.config.EthereumPasswords
+import jp.co.soramitsu.soranet.eth.contract.Master
 import jp.co.soramitsu.soranet.eth.contract.MasterToken
 import jp.co.soramitsu.soranet.eth.helper.hexStringToByteArray
 import jp.co.soramitsu.soranet.eth.sidechain.util.*
@@ -46,16 +47,24 @@ class ContractTestHelper {
             listOf(accMain),
             TOKEN_NAME,
             TOKEN_SYMBOL,
-            TOKEN_DECIMALS
+            TOKEN_DECIMALS,
+            TOKEN_SUPPLY_BENEFICIARY,
+            TOKEN_SUPPLY,
+            TOKEN_REWARD
         )
     }
     val tokenAddress by lazy {
         master.tokenInstance().send()
     }
+    val masterToken by lazy {
+        deployHelper.loadSpecificTokenSmartContract(tokenAddress)
+    }
 
     val etherAddress = "0x0000000000000000000000000000000000000000"
     val defaultIrohaHash = Hash.sha3(String.format("%064x", BigInteger.valueOf(12345)))
+    val defaultProof = Hash.sha3(String.format("%064x", BigInteger.valueOf(1234567891012302385)))
     val defaultByteHash = hexStringToByteArray(defaultIrohaHash)
+    val defaultByteProof = hexStringToByteArray(defaultProof)
 
     data class SigsData(
         val vv: ArrayList<BigInteger>,
@@ -187,6 +196,20 @@ class ContractTestHelper {
         ).send()
     }
 
+    fun supplyProof(
+        peers: Int = 1,
+        peerKeys: List<ECKeyPair> = listOf(keypair),
+        contract: Master = master
+    ): TransactionReceipt {
+        val signatures = prepareSignatures(peers, peerKeys, hashToProve(defaultProof))
+        return contract.submitProof(
+            defaultByteProof,
+            signatures.vv,
+            signatures.rr,
+            signatures.ss
+        ).send()
+    }
+
     fun sendEthereum(amount: BigInteger, to: String) {
         deployHelper.sendEthereum(amount, to)
     }
@@ -244,6 +267,9 @@ class ContractTestHelper {
     companion object {
         const val TOKEN_NAME = "Test Token"
         const val TOKEN_SYMBOL = "TST"
+        val TOKEN_SUPPLY = BigInteger.valueOf(10000000)
+        val TOKEN_REWARD = BigInteger.valueOf(100)
+        const val TOKEN_SUPPLY_BENEFICIARY = "0x0000000000000000000000000000000000000001"
         val TOKEN_DECIMALS: BigInteger = BigInteger.valueOf(18)
     }
 }

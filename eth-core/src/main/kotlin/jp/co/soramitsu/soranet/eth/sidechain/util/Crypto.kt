@@ -105,6 +105,13 @@ fun hashToMint(
 }
 
 /**
+ * Calculates keccak-256 hash of the param. Param is:
+ * @param proof hash (merkle root) of the related voting
+ * @return keccak-256 hash of the field
+ */
+fun hashToProve(proof: String) = Hash.sha3(proof.replace("0x", ""))
+
+/**
  * Data class which stores signature splitted into components
  * @param v v component of signature
  * @param r r component of signature

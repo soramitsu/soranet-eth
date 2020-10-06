@@ -16,6 +16,7 @@ import org.web3j.abi.datatypes.Address
 import org.web3j.abi.datatypes.DynamicArray
 import org.web3j.abi.datatypes.Type
 import org.web3j.abi.datatypes.Utf8String
+import org.web3j.abi.datatypes.generated.Uint256
 import org.web3j.abi.datatypes.generated.Uint8
 import org.web3j.contracts.eip20.generated.ERC20
 import org.web3j.crypto.WalletUtils
@@ -218,10 +219,13 @@ class DeployHelper(
      * @return master smart contract object
      */
     fun deployMasterSmartContract(
-            peers: List<String>,
-            tokenFullName: String,
-            tokenSymbol: String,
-            decimals: BigInteger
+        peers: List<String>,
+        tokenFullName: String,
+        tokenSymbol: String,
+        decimals: BigInteger,
+        beneficiary: String,
+        supply: BigInteger,
+        reward: BigInteger
     ): Master {
         val master = Master.deploy(
             web3,
@@ -230,7 +234,10 @@ class DeployHelper(
             peers,
             tokenFullName,
             tokenSymbol,
-            decimals
+            decimals,
+            beneficiary,
+            supply,
+            reward
         ).send()
         logger.info { "Master smart contract ${master.contractAddress} was deployed" }
         return master
@@ -240,13 +247,24 @@ class DeployHelper(
      * Deploy [Master] via [OwnedUpgradeabilityProxy].
      */
     fun deployUpgradableMasterSmartContract(
-            peers: List<String>,
-            tokenFullName: String,
-            tokenSymbol: String,
-            decimals: BigInteger
+        peers: List<String>,
+        tokenFullName: String,
+        tokenSymbol: String,
+        decimals: BigInteger,
+        beneficiary: String,
+        supply: BigInteger,
+        reward: BigInteger
     ): Master {
         // deploy implementation
-        val master = deployMasterSmartContract(peers, tokenFullName, tokenSymbol, decimals)
+        val master = deployMasterSmartContract(
+            peers,
+            tokenFullName,
+            tokenSymbol,
+            decimals,
+            beneficiary,
+            supply,
+            reward
+        )
 
         // deploy proxy
         val proxy = deployOwnedUpgradeabilityProxy()
@@ -259,7 +277,10 @@ class DeployHelper(
                 DynamicArray<Address>(Address::class.java, peers.map { Address(it) }) as Type<Any>,
                 Utf8String(tokenFullName) as Type<Any>,
                 Utf8String(tokenSymbol) as Type<Any>,
-                Uint8(decimals) as Type<Any>
+                Uint8(decimals) as Type<Any>,
+                Address(beneficiary) as Type<Any>,
+                Uint256(supply) as Type<Any>,
+                Uint256(reward) as Type<Any>
             )
         proxy.upgradeToAndCall(master.contractAddress, encoded, BigInteger.ZERO).send()
 
@@ -278,8 +299,8 @@ class DeployHelper(
     fun loadMasterContract(address: String): Master {
         return Master.load(
             address,
-                web3,
-                defaultTransactionManager,
+            web3,
+            defaultTransactionManager,
             StaticGasProvider(gasPrice, gasLimit)
         )
     }

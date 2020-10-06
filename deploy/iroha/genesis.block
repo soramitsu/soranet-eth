@@ -345,6 +345,13 @@
               },
               {
                 "createAsset": {
+                  "assetName": "val",
+                  "domainId": "sora",
+                  "precision": 18
+                }
+              },
+              {
+                "createAsset": {
                   "assetName": "ether",
                   "domainId": "ethereum",
                   "precision": 18
