@@ -94,6 +94,13 @@ object EthIntegrationHelperUtil : IrohaIntegrationHelperUtil() {
         )
     }
 
+    val proofSetterIrohaConsumer by lazy {
+        IrohaConsumerImpl(
+            accountHelper.proofSetterAccount,
+            irohaAPI
+        )
+    }
+
     /** New master ETH master contract*/
     val masterContract by lazy {
         val contract = contractTestHelper.master

@@ -16,32 +16,5 @@ services:
     networks:
       - d3-network
 
-  d3-eth-deposit:
-    image: docker.soramitsu.co.jp/soranet/eth-deposit:develop
-    container_name: d3-eth-deposit
-    restart: on-failure
-    env_file:
-      - ../deploy/.env-default-jvm-options
-    ports:
-      - 20000:20000
-      - 19022:9010
-    volumes:
-      - ../configs:/configs
-      - ../deploy/ethereum/keys:/deploy/ethereum/keys
-    networks:
-      - d3-network
-
-  d3-eth-testing:
-    image: docker.soramitsu.co.jp/soranet/eth-testing-endpoints:develop
-    container_name: d3-eth-testing
-    restart: on-failure
-    volumes:
-      - ../configs:/configs
-      - ../deploy/ethereum/keys:/deploy/ethereum/keys
-    ports:
-      - 18982:18982
-    networks:
-      - d3-network
-
 networks:
   d3-network:

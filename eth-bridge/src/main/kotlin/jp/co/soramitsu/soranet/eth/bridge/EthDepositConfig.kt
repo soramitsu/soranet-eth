@@ -72,4 +72,7 @@ interface EthDepositConfig {
 
     /** Ethereum master contract compiled abi file path**/
     val masterContractAbiPath: String
+
+    /** Sora proofs setter account id */
+    val referendumProofSetterAccount: String
 }

@@ -39,7 +39,6 @@ import jp.co.soramitsu.soranet.eth.sidechain.util.DeployHelper
 import jp.co.soramitsu.soranet.eth.sidechain.util.ENDPOINT_ETHEREUM
 import mu.KLogging
 import okhttp3.OkHttpClient
-import org.web3j.crypto.ECKeyPair
 import org.web3j.crypto.WalletUtils
 import org.web3j.protocol.Web3j
 import org.web3j.protocol.core.JsonRpc2_0Web3j
@@ -71,10 +70,12 @@ class EthDepositInitialization(
     private val ethTokensProvider: EthTokensProvider,
     private val registrationHandler: EthereumWalletRegistrationHandler
 ) {
-    private var ecKeyPair: ECKeyPair = WalletUtils.loadCredentials(
+    private val ethCredential = WalletUtils.loadCredentials(
         passwordsConfig.credentialsPassword,
         passwordsConfig.credentialsPath
-    ).ecKeyPair
+    )
+
+    private val ecKeyPair = ethCredential.ecKeyPair
 
     private val queryHelper = IrohaQueryHelperImpl(irohaAPI, notaryCredential)
 
@@ -134,7 +135,14 @@ class EthDepositInitialization(
         deployHelper,
         withdrawalQueryHelper,
         withdrawalIrohaConsumer,
-        passwordsConfig
+        ethCredential
+    )
+
+    private val referendumProofHandler = ReferendumHashProofHandler(
+        ethDepositConfig.referendumProofSetterAccount,
+        deployHelper,
+        withdrawalIrohaConsumer,
+        ethCredential
     )
 
     private val masterContractAbi = Files.readString(File(ethDepositConfig.masterContractAbiPath))
@@ -176,6 +184,7 @@ class EthDepositInitialization(
                             registrationHandler.filterAndRegister(block)
                             ethTokensProvider.filterAndExpand(block)
                             withdrawalProofHandler.proceedBlock(block)
+                            referendumProofHandler.proceedBlock(block)
                         }, { ex ->
                             logger.error("Withdrawal observable error", ex)
                             exitProcess(1)

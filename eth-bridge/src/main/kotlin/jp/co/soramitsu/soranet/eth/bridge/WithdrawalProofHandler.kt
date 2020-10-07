@@ -13,12 +13,12 @@ import com.d3.commons.util.hex
 import com.d3.commons.util.irohaEscape
 import iroha.protocol.BlockOuterClass
 import jp.co.soramitsu.iroha.java.Utils
-import jp.co.soramitsu.soranet.eth.config.EthereumPasswords
 import jp.co.soramitsu.soranet.eth.provider.EthAddressProvider
 import jp.co.soramitsu.soranet.eth.provider.EthTokensProvider
 import jp.co.soramitsu.soranet.eth.sidechain.util.*
 import mu.KLogging
 import org.apache.commons.codec.binary.Hex
+import org.web3j.crypto.Credentials
 import org.web3j.crypto.WalletUtils
 import java.math.BigDecimal
 
@@ -36,18 +36,13 @@ class WithdrawalProofHandler(
     private val deployHelper: DeployHelper,
     private val queryHelper: IrohaQueryHelper,
     private val irohaConsumer: IrohaConsumer,
-    passwordsConfig: EthereumPasswords
+    private val credentials: Credentials
 ) {
     private val gson = GsonInstance.get()
 
     init {
         logger.info { "Wallet Withdrawal: Initialization of WithdrawalProofHandler withrdawalTriggerAccountId=$withdrawalTriggerAccountId" }
     }
-
-    private val ethCredential = WalletUtils.loadCredentials(
-        passwordsConfig.credentialsPassword,
-        passwordsConfig.credentialsPath
-    )
 
     /**
      * Filter expansion trigger event and call expansion logic
@@ -81,7 +76,7 @@ class WithdrawalProofHandler(
                         createAccountIfNotExists(proofAccountName)
 
                         // write proof
-                        val key = ethCredential.address
+                        val key = credentials.address
                         val proof = createProof(
                             transfer.srcAccountId,
                             transfer.assetId,
