@@ -74,7 +74,7 @@ class ReferendumHashProofHandler(
     }
 
     private fun processCompareAndSetAccountDetailCommand(command: Commands.CompareAndSetAccountDetail): ReferendumProofContext? {
-        return if (command.key == PROOF_KEY && command.accountId.endsWith(SORA_PROOF_DOMAIN))
+        return if (command.key == PROOF_MERKLE_ROOT_KEY && command.accountId.endsWith(SORA_PROOF_DOMAIN))
             ReferendumProofContext(
                 command.accountId,
                 command.value
@@ -83,7 +83,7 @@ class ReferendumHashProofHandler(
     }
 
     private fun processSetAccountDetailCommand(command: Commands.SetAccountDetail): ReferendumProofContext? {
-        return if (command.key == PROOF_KEY && command.accountId.endsWith(SORA_PROOF_DOMAIN))
+        return if (command.key == PROOF_MERKLE_ROOT_KEY && command.accountId.endsWith(SORA_PROOF_DOMAIN))
             ReferendumProofContext(
                 command.accountId,
                 command.value
@@ -110,7 +110,7 @@ class ReferendumHashProofHandler(
      * Logger
      */
     companion object : KLogging() {
-        const val PROOF_KEY = "proof"
+        const val PROOF_MERKLE_ROOT_KEY = "root"
     }
 }
 

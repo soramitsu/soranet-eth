@@ -10,7 +10,7 @@ import com.d3.commons.util.GsonInstance
 import com.d3.commons.util.getRandomId
 import com.d3.commons.util.irohaUnEscape
 import jp.co.soramitsu.soranet.eth.bridge.ReferendumHashProof
-import jp.co.soramitsu.soranet.eth.bridge.ReferendumHashProofHandler.Companion.PROOF_KEY
+import jp.co.soramitsu.soranet.eth.bridge.ReferendumHashProofHandler.Companion.PROOF_MERKLE_ROOT_KEY
 import jp.co.soramitsu.soranet.eth.bridge.SORA_PROOF_DOMAIN
 import jp.co.soramitsu.soranet.eth.integration.helper.EthIntegrationTestEnvironment
 import org.junit.jupiter.api.*
@@ -76,7 +76,7 @@ class ReferendumProofIntegrationTest {
         ModelUtil.setAccountDetail(
             integrationHelper.proofSetterIrohaConsumer,
             accountId,
-            PROOF_KEY,
+            PROOF_MERKLE_ROOT_KEY,
             hash
         )
 
