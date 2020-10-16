@@ -188,6 +188,40 @@ contract Master {
     }
 
     /**
+     * Register a clientIrohaAccountId for the caller clientEthereumAddress
+     * @param clientEthereumAddress - ethereum address to register
+     * @param clientIrohaAccountId - iroha account id
+     * @param txHash - iroha tx hash of registration
+     * @param v array of signatures of tx_hash (v-component)
+     * @param r array of signatures of tx_hash (r-component)
+     * @param s array of signatures of tx_hash (s-component)
+     */
+    function register(
+        address clientEthereumAddress,
+        bytes memory clientIrohaAccountId,
+        bytes32 txHash,
+        uint8[] memory v,
+        bytes32[] memory r,
+        bytes32[] memory s
+    )
+    public
+    {
+        require(used[txHash] == false);
+        require(checkSignatures(
+                    keccak256(abi.encodePacked(clientEthereumAddress, clientIrohaAccountId, txHash)),
+                    v,
+                    r,
+                    s)
+                );
+        require(clientEthereumAddress == msg.sender);
+        require(registeredClients[clientEthereumAddress].length == 0);
+
+        registeredClients[clientEthereumAddress] = clientIrohaAccountId;
+
+        emit IrohaAccountRegistration(clientEthereumAddress, clientIrohaAccountId);
+    }
+
+    /**
      * Withdraws specified amount of ether or one of ERC-20 tokens to provided address
      * @param tokenAddress address of token to withdraw (0 for ether)
      * @param amount amount of tokens or ether to withdraw

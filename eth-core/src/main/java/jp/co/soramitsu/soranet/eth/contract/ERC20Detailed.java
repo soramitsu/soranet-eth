@@ -40,21 +40,13 @@ public class ERC20Detailed extends Contract {
     public static final String BINARY = "";
 
     public static final String FUNC_NAME = "name";
-
     public static final String FUNC_APPROVE = "approve";
-
     public static final String FUNC_TOTALSUPPLY = "totalSupply";
-
     public static final String FUNC_TRANSFERFROM = "transferFrom";
-
     public static final String FUNC_DECIMALS = "decimals";
-
     public static final String FUNC_BALANCEOF = "balanceOf";
-
     public static final String FUNC_SYMBOL = "symbol";
-
     public static final String FUNC_TRANSFER = "transfer";
-
     public static final String FUNC_ALLOWANCE = "allowance";
 
     public static final Event TRANSFER_EVENT = new Event("Transfer",

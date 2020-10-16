@@ -22,8 +22,6 @@ import java.math.BigInteger;
 public class Failer extends Contract {
     public static final String BINARY = "608060405234801561001057600080fd5b50610111806100206000396000f3fe608060405260043610601c5760003560e01c8063a9059cbb14605f575b6040805162461bcd60e51b8152602060048201526013602482015272195d1a081d1c985b9cd9995c881c995d995c9d606a1b604482015290519081900360640190fd5b348015606a57600080fd5b50609460048036036040811015607f57600080fd5b506001600160a01b0381351690602001356096565b005b6040805162461bcd60e51b8152602060048201526016602482015275115490cb4c8c081d1c985b9cd9995c881c995d995c9d60521b604482015290519081900360640190fdfea265627a7a72305820efcd6fca1609c1a4ed39c94aac504cb34f10016af33477f776ecae035f1feef264736f6c63430005090032";
 
-    public static final String FUNC_TRANSFER = "transfer";
-
     @Deprecated
     protected Failer(String contractAddress, Web3j web3j, Credentials credentials, BigInteger gasPrice, BigInteger gasLimit) {
         super(BINARY, contractAddress, web3j, credentials, gasPrice, gasLimit);
@@ -76,5 +74,9 @@ public class Failer extends Contract {
     @Deprecated
     public static RemoteCall<Failer> deploy(Web3j web3j, TransactionManager transactionManager, BigInteger gasPrice, BigInteger gasLimit) {
         return deployRemoteCall(Failer.class, web3j, transactionManager, gasPrice, gasLimit, BINARY, "");
+    }
+
+    public void transfer(String param0, BigInteger param1) {
+        throw new RuntimeException("cannot call constant function with void return type");
     }
 }

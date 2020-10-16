@@ -37,11 +37,8 @@ public class Ownable extends Contract {
     public static final String BINARY = "";
 
     public static final String FUNC_RENOUNCEOWNERSHIP = "renounceOwnership";
-
     public static final String FUNC_OWNER = "owner";
-
     public static final String FUNC_ISOWNER = "isOwner";
-
     public static final String FUNC_TRANSFEROWNERSHIP = "transferOwnership";
 
     public static final Event OWNERSHIPTRANSFERRED_EVENT = new Event("OwnershipTransferred",

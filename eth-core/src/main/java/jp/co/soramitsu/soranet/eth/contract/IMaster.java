@@ -32,9 +32,7 @@ public class IMaster extends Contract {
     public static final String BINARY = "";
 
     public static final String FUNC_MINTTOKENSBYPEERS = "mintTokensByPeers";
-
     public static final String FUNC_CHECKTOKENADDRESS = "checkTokenAddress";
-
     public static final String FUNC_WITHDRAW = "withdraw";
 
     @Deprecated

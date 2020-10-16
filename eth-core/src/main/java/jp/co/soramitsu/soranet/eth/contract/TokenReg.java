@@ -37,27 +37,16 @@ public class TokenReg extends Contract {
     public static final String BINARY = "";
 
     public static final String FUNC_TOKEN = "token";
-
     public static final String FUNC_REGISTER = "register";
-
     public static final String FUNC_SETFEE = "setFee";
-
     public static final String FUNC_META = "meta";
-
     public static final String FUNC_REGISTERAS = "registerAs";
-
     public static final String FUNC_FROMTLA = "fromTLA";
-
     public static final String FUNC_DRAIN = "drain";
-
     public static final String FUNC_TOKENCOUNT = "tokenCount";
-
     public static final String FUNC_UNREGISTER = "unregister";
-
     public static final String FUNC_FROMADDRESS = "fromAddress";
-
     public static final String FUNC_SETMETA = "setMeta";
-
     public static final String FUNC_FEE = "fee";
 
     @Deprecated
