@@ -14,6 +14,7 @@ import iroha.protocol.Commands
 import jp.co.soramitsu.soranet.eth.sidechain.util.DeployHelper
 import jp.co.soramitsu.soranet.eth.sidechain.util.VRSSignature
 import jp.co.soramitsu.soranet.eth.sidechain.util.extractVRS
+import jp.co.soramitsu.soranet.eth.sidechain.util.hashToProve
 import mu.KLogging
 import org.apache.commons.codec.binary.Hex
 import org.web3j.crypto.Credentials
@@ -91,7 +92,8 @@ class ReferendumHashProofHandler(
             null
     }
 
-    private fun createProof(hash: String): String {
+    private fun createProof(proof: String): String {
+        val hash = hashToProve(proof)
         val signatureString = deployHelper.signUserData(hash)
         val vrs = extractVRS(signatureString)
         val v = vrs.v.toString(16).replace("0x", "")
