@@ -93,8 +93,7 @@ class ReferendumHashProofHandler(
     }
 
     private fun createProof(proof: String): String {
-        val hash = hashToProve(proof)
-        val signatureString = deployHelper.signUserData(hash)
+        val signatureString = deployHelper.signUserData(hashToProve(hash))
         val vrs = extractVRS(signatureString)
         val v = vrs.v.toString(16).replace("0x", "")
         val r = Hex.encodeHexString(vrs.r).replace("0x", "")
@@ -102,7 +101,7 @@ class ReferendumHashProofHandler(
         val signature = VRSSignature(v, r, s)
 
         val referendumHashProof = ReferendumHashProof(
-            hash,
+            proof,
             signature
         )
         return gson.toJson(referendumHashProof).irohaEscape()
