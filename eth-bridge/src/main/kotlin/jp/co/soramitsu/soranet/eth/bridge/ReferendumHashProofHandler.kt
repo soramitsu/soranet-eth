@@ -11,11 +11,8 @@ import com.d3.commons.util.GsonInstance
 import com.d3.commons.util.irohaEscape
 import iroha.protocol.BlockOuterClass
 import iroha.protocol.Commands
-import jp.co.soramitsu.soranet.eth.sidechain.util.DeployHelper
-import jp.co.soramitsu.soranet.eth.sidechain.util.VRSSignature
-import jp.co.soramitsu.soranet.eth.sidechain.util.extractVRS
+import jp.co.soramitsu.soranet.eth.sidechain.util.*
 import mu.KLogging
-import org.apache.commons.codec.binary.Hex
 import org.web3j.crypto.Credentials
 
 const val SORA_PROOF_DOMAIN = "@soraProof"
@@ -91,16 +88,12 @@ class ReferendumHashProofHandler(
             null
     }
 
-    private fun createProof(hash: String): String {
-        val signatureString = deployHelper.signUserData(hash)
-        val vrs = extractVRS(signatureString)
-        val v = vrs.v.toString(16).replace("0x", "")
-        val r = Hex.encodeHexString(vrs.r).replace("0x", "")
-        val s = Hex.encodeHexString(vrs.s).replace("0x", "")
-        val signature = VRSSignature(v, r, s)
+    private fun createProof(proof: String): String {
+        val signatureString = deployHelper.signUserData(hashToProve(proof))
+        val signature = extractVRSSignature(signatureString)
 
         val referendumHashProof = ReferendumHashProof(
-            hash,
+            proof,
             signature
         )
         return gson.toJson(referendumHashProof).irohaEscape()
