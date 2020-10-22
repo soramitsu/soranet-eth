@@ -17,7 +17,6 @@ import jp.co.soramitsu.soranet.eth.provider.EthAddressProvider
 import jp.co.soramitsu.soranet.eth.provider.EthTokensProvider
 import jp.co.soramitsu.soranet.eth.sidechain.util.*
 import mu.KLogging
-import org.apache.commons.codec.binary.Hex
 import org.web3j.crypto.Credentials
 import org.web3j.crypto.WalletUtils
 import java.math.BigDecimal
@@ -137,11 +136,7 @@ class WithdrawalProofHandler(
                     beneficiary
                 )
         val signatureString = deployHelper.signUserData(hash)
-        val vrs = extractVRS(signatureString)
-        val v = vrs.v.toString(16).replace("0x", "")
-        val r = Hex.encodeHexString(vrs.r).replace("0x", "")
-        val s = Hex.encodeHexString(vrs.s).replace("0x", "")
-        val signature = VRSSignature(v, r, s)
+        val signature = extractVRSSignature(signatureString)
 
         val withdrawalProof = WithdrawalProof(
             accountId,
