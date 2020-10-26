@@ -15,6 +15,9 @@ import okhttp3.*
 import org.web3j.abi.datatypes.Address
 import org.web3j.abi.datatypes.DynamicArray
 import org.web3j.abi.datatypes.Type
+import org.web3j.abi.datatypes.Utf8String
+import org.web3j.abi.datatypes.generated.Uint256
+import org.web3j.abi.datatypes.generated.Uint8
 import org.web3j.contracts.eip20.generated.ERC20
 import org.web3j.crypto.WalletUtils
 import org.web3j.protocol.Web3j
@@ -45,9 +48,9 @@ class BasicAuthenticator(private val nodeLogin: String?, private val nodePasswor
         ethereumPasswords.nodePassword
     )
 
-    override fun authenticate(route: Route, response: Response): Request {
+    override fun authenticate(route: Route?, response: Response): Request {
         val credential = Credentials.basic(nodeLogin!!, nodePassword!!)
-        return response.request().newBuilder().header("Authorization", credential).build()
+        return response.request.newBuilder().header("Authorization", credential).build()
     }
 }
 
@@ -215,12 +218,26 @@ class DeployHelper(
      * Deploy master smart contract
      * @return master smart contract object
      */
-    fun deployMasterSmartContract(peers: List<String>): Master {
+    fun deployMasterSmartContract(
+        peers: List<String>,
+        tokenFullName: String,
+        tokenSymbol: String,
+        decimals: BigInteger,
+        beneficiary: String,
+        supply: BigInteger,
+        reward: BigInteger
+    ): Master {
         val master = Master.deploy(
             web3,
             defaultTransactionManager,
             StaticGasProvider(gasPrice, gasLimit),
-            peers
+            peers,
+            tokenFullName,
+            tokenSymbol,
+            decimals,
+            beneficiary,
+            supply,
+            reward
         ).send()
         logger.info { "Master smart contract ${master.contractAddress} was deployed" }
         return master
@@ -229,9 +246,25 @@ class DeployHelper(
     /**
      * Deploy [Master] via [OwnedUpgradeabilityProxy].
      */
-    fun deployUpgradableMasterSmartContract(peers: List<String>): Master {
+    fun deployUpgradableMasterSmartContract(
+        peers: List<String>,
+        tokenFullName: String,
+        tokenSymbol: String,
+        decimals: BigInteger,
+        beneficiary: String,
+        supply: BigInteger,
+        reward: BigInteger
+    ): Master {
         // deploy implementation
-        val master = deployMasterSmartContract(peers)
+        val master = deployMasterSmartContract(
+            peers,
+            tokenFullName,
+            tokenSymbol,
+            decimals,
+            beneficiary,
+            supply,
+            reward
+        )
 
         // deploy proxy
         val proxy = deployOwnedUpgradeabilityProxy()
@@ -241,7 +274,13 @@ class DeployHelper(
             encodeFunction(
                 "initialize",
                 Address(credentials.address) as Type<Any>,
-                DynamicArray<Address>(Address::class.java, peers.map { Address(it) }) as Type<Any>
+                DynamicArray<Address>(Address::class.java, peers.map { Address(it) }) as Type<Any>,
+                Utf8String(tokenFullName) as Type<Any>,
+                Utf8String(tokenSymbol) as Type<Any>,
+                Uint8(decimals) as Type<Any>,
+                Address(beneficiary) as Type<Any>,
+                Uint256(supply) as Type<Any>,
+                Uint256(reward) as Type<Any>
             )
         proxy.upgradeToAndCall(master.contractAddress, encoded, BigInteger.ZERO).send()
 
@@ -258,13 +297,12 @@ class DeployHelper(
      * @return Master contract
      */
     fun loadMasterContract(address: String): Master {
-        val proxiedMaster = Master.load(
+        return Master.load(
             address,
             web3,
             defaultTransactionManager,
             StaticGasProvider(gasPrice, gasLimit)
         )
-        return proxiedMaster
     }
 
     /**
@@ -285,16 +323,16 @@ class DeployHelper(
      * Load Sora token smart contract
      * @return Sora token instance
      */
-    fun loadSoraTokenSmartContract(tokenAddress: String): SoraToken {
-        val soraToken =
-            SoraToken.load(
+    fun loadSpecificTokenSmartContract(tokenAddress: String): MasterToken {
+        val token =
+            MasterToken.load(
                 tokenAddress,
                 web3,
                 defaultTransactionManager,
                 defaultGasProvider
             )
-        logger.info { "Sora token contract ${soraToken.contractAddress} was loaded" }
-        return soraToken
+        logger.info { "Sora token contract ${token.contractAddress} was loaded" }
+        return token
     }
 
     /**
@@ -365,13 +403,13 @@ class DeployHelper(
      * Deploy OwnedUpgradabilityProxy contract. Contract is an upgradable proxy to another contract.
      */
     fun deployOwnedUpgradeabilityProxy(): OwnedUpgradeabilityProxy {
-        val OwnedUpgradeabilityProxy = OwnedUpgradeabilityProxy.deploy(
+        val ownedUpgradeabilityProxy = OwnedUpgradeabilityProxy.deploy(
             web3,
             defaultTransactionManager,
             StaticGasProvider(gasPrice, gasLimit)
         ).send()
-        logger.info { "OwnedUpgradeabilityProxy was deployed at ${OwnedUpgradeabilityProxy.contractAddress}" }
-        return OwnedUpgradeabilityProxy
+        logger.info { "OwnedUpgradeabilityProxy was deployed at ${ownedUpgradeabilityProxy.contractAddress}" }
+        return ownedUpgradeabilityProxy
     }
 
     /**

@@ -1,8 +1,3 @@
-/*
- * Copyright Soramitsu Co., Ltd. All Rights Reserved.
- * SPDX-License-Identifier: Apache-2.0
- */
-
 package jp.co.soramitsu.soranet.eth.contract;
 
 import org.web3j.abi.TypeReference;
@@ -12,6 +7,7 @@ import org.web3j.abi.datatypes.Type;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.RemoteCall;
+import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tx.Contract;
 import org.web3j.tx.TransactionManager;
@@ -29,13 +25,15 @@ import java.util.List;
  * or the org.web3j.codegen.SolidityFunctionWrapperGenerator in the
  * <a href="https://github.com/web3j/web3j/tree/master/codegen">codegen module</a> to update.
  *
- * <p>Generated with web3j version 4.2.0.
+ * <p>Generated with web3j version 4.5.16.
  */
+@SuppressWarnings("rawtypes")
 public class IMaster extends Contract {
+    public static final String BINARY = "";
+
     public static final String FUNC_MINTTOKENSBYPEERS = "mintTokensByPeers";
     public static final String FUNC_CHECKTOKENADDRESS = "checkTokenAddress";
     public static final String FUNC_WITHDRAW = "withdraw";
-    private static final String BINARY = "";
 
     @Deprecated
     protected IMaster(String contractAddress, Web3j web3j, Credentials credentials, BigInteger gasPrice, BigInteger gasLimit) {
@@ -91,12 +89,12 @@ public class IMaster extends Contract {
         return deployRemoteCall(IMaster.class, web3j, transactionManager, gasPrice, gasLimit, BINARY, "");
     }
 
-    public RemoteCall<TransactionReceipt> mintTokensByPeers(String tokenAddress, BigInteger amount, String beneficiary, byte[] txHash, List<BigInteger> v, List<byte[]> r, List<byte[]> s, String from) {
+    public RemoteFunctionCall<TransactionReceipt> mintTokensByPeers(String tokenAddress, BigInteger amount, String beneficiary, byte[] txHash, List<BigInteger> v, List<byte[]> r, List<byte[]> s, String from) {
         final Function function = new Function(
                 FUNC_MINTTOKENSBYPEERS,
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(tokenAddress),
+                Arrays.asList(new org.web3j.abi.datatypes.Address(160, tokenAddress),
                         new org.web3j.abi.datatypes.generated.Uint256(amount),
-                        new org.web3j.abi.datatypes.Address(beneficiary),
+                        new org.web3j.abi.datatypes.Address(160, beneficiary),
                         new org.web3j.abi.datatypes.generated.Bytes32(txHash),
                         new org.web3j.abi.datatypes.DynamicArray<org.web3j.abi.datatypes.generated.Uint8>(
                                 org.web3j.abi.datatypes.generated.Uint8.class,
@@ -107,25 +105,25 @@ public class IMaster extends Contract {
                         new org.web3j.abi.datatypes.DynamicArray<org.web3j.abi.datatypes.generated.Bytes32>(
                                 org.web3j.abi.datatypes.generated.Bytes32.class,
                                 org.web3j.abi.Utils.typeMap(s, org.web3j.abi.datatypes.generated.Bytes32.class)),
-                        new org.web3j.abi.datatypes.Address(from)),
-                Collections.<TypeReference<?>>emptyList());
+                        new org.web3j.abi.datatypes.Address(160, from)),
+                Collections.emptyList());
         return executeRemoteCallTransaction(function);
     }
 
-    public RemoteCall<Boolean> checkTokenAddress(String token) {
+    public RemoteFunctionCall<Boolean> checkTokenAddress(String token) {
         final Function function = new Function(FUNC_CHECKTOKENADDRESS,
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(token)),
-                Arrays.<TypeReference<?>>asList(new TypeReference<Bool>() {
+                Arrays.asList(new org.web3j.abi.datatypes.Address(160, token)),
+                Arrays.asList(new TypeReference<Bool>() {
                 }));
         return executeRemoteCallSingleValueReturn(function, Boolean.class);
     }
 
-    public RemoteCall<TransactionReceipt> withdraw(String tokenAddress, BigInteger amount, String to, byte[] txHash, List<BigInteger> v, List<byte[]> r, List<byte[]> s, String from) {
+    public RemoteFunctionCall<TransactionReceipt> withdraw(String tokenAddress, BigInteger amount, String to, byte[] txHash, List<BigInteger> v, List<byte[]> r, List<byte[]> s, String from) {
         final Function function = new Function(
                 FUNC_WITHDRAW,
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(tokenAddress),
+                Arrays.asList(new org.web3j.abi.datatypes.Address(160, tokenAddress),
                         new org.web3j.abi.datatypes.generated.Uint256(amount),
-                        new org.web3j.abi.datatypes.Address(to),
+                        new org.web3j.abi.datatypes.Address(160, to),
                         new org.web3j.abi.datatypes.generated.Bytes32(txHash),
                         new org.web3j.abi.datatypes.DynamicArray<org.web3j.abi.datatypes.generated.Uint8>(
                                 org.web3j.abi.datatypes.generated.Uint8.class,
@@ -136,8 +134,8 @@ public class IMaster extends Contract {
                         new org.web3j.abi.datatypes.DynamicArray<org.web3j.abi.datatypes.generated.Bytes32>(
                                 org.web3j.abi.datatypes.generated.Bytes32.class,
                                 org.web3j.abi.Utils.typeMap(s, org.web3j.abi.datatypes.generated.Bytes32.class)),
-                        new org.web3j.abi.datatypes.Address(from)),
-                Collections.<TypeReference<?>>emptyList());
+                        new org.web3j.abi.datatypes.Address(160, from)),
+                Collections.emptyList());
         return executeRemoteCallTransaction(function);
     }
 }

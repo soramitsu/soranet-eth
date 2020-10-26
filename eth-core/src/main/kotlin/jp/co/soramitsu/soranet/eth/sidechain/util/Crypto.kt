@@ -5,6 +5,7 @@
 
 package jp.co.soramitsu.soranet.eth.sidechain.util
 
+import org.apache.commons.codec.binary.Hex
 import org.web3j.crypto.ECKeyPair
 import org.web3j.crypto.Hash
 import org.web3j.crypto.Sign
@@ -105,6 +106,13 @@ fun hashToMint(
 }
 
 /**
+ * Calculates keccak-256 hash of the param. Param is:
+ * @param proof hash (merkle root) of the related voting
+ * @return keccak-256 hash of the field
+ */
+fun hashToProve(proof: String) = Hash.sha3(proof.replace("0x", ""))
+
+/**
  * Data class which stores signature splitted into components
  * @param v v component of signature
  * @param r r component of signature
@@ -133,4 +141,15 @@ fun extractVRS(signature: String): VRS {
         v += BigInteger.valueOf(27)
     }
     return VRS(v, r, s)
+}
+
+/**
+ * Convert to Ethereum-compatible format of VRS Signature
+ */
+fun extractVRSSignature(signature: String): VRSSignature {
+    val vrs = extractVRS(signature)
+    val v = vrs.v.toString(16).replace("0x", "")
+    val r = Hex.encodeHexString(vrs.r).replace("0x", "")
+    val s = Hex.encodeHexString(vrs.s).replace("0x", "")
+    return VRSSignature(v, r, s)
 }

@@ -30,9 +30,11 @@ private val logger = KLogging().logger
  * [args] should contain the list of notary ethereum addresses
  */
 fun main(args: Array<String>) {
-    logger.info { "Run predeploy with notary addresses: ${args.toList()}" }
-    if (args.isEmpty()) {
-        logger.error { "No notary ethereum addresses are provided." }
+    val toList = args.toList()
+    logger.info { "Run predeploy with notary addresses: $toList" }
+    val size = args.size
+    if (size < 7) {
+        logger.error { "No notary ethereum addresses and token arguments are provided." }
         exitProcess(1)
     }
 
@@ -50,7 +52,13 @@ fun main(args: Array<String>) {
                 .build()
 
             val master = deployHelper.deployUpgradableMasterSmartContract(
-                args.toList()
+                toList.subList(0, size - 6),
+                toList[size - 6],
+                toList[size - 5],
+                toList[size - 4].toBigInteger(),
+                toList[size - 3],
+                toList[size - 2].toBigInteger(),
+                toList[size - 1].toBigInteger()
             )
             saveContract(
                 master.contractAddress,

@@ -1,13 +1,16 @@
 pragma solidity ^0.5.8;
 
 import "./IERC20.sol";
-import "./SoraToken.sol";
+import "./MasterToken.sol";
 
 /**
  * Provides functionality of master contract
  */
 contract Master {
     bool internal initialized_;
+    bool internal enabled_;
+    bytes32 public proof;
+    uint256 public proofReward;
     address public owner_;
     mapping(address => bool) public isPeer;
     uint public peersCount;
@@ -15,34 +18,25 @@ contract Master {
     mapping(bytes32 => bool) public used;
     mapping(address => bool) public uniqueAddresses;
 
-    /** registered client addresses */
-    mapping(address => bytes) public registeredClients;
-
-    SoraToken public xorTokenInstance;
+    MasterToken public tokenInstance;
 
     mapping(address => bool) public isToken;
 
-    /**
-     * Emit event on new registration with iroha acountId
-     */
-     event IrohaAccountRegistration(address ethereumAddress, bytes accountId);
+    event Withdrawal(bytes32 txHash);
 
-    /**
-     * Emit event when master contract does not have enough assets to proceed withdraw
-     */
-    event InsufficientFundsForWithdrawal(address asset, address recipient);
+    event EnableContract(address provider, bytes32 proof);
 
     /**
      * Constructor. Sets contract owner to contract creator.
      */
-    constructor(address[] memory initialPeers) public {
-        initialize(msg.sender, initialPeers);
+    constructor(address[] memory initialPeers, string memory name, string memory symbol, uint8 decimals, address beneficiary, uint256 supply, uint256 reward) public {
+        initialize(msg.sender, initialPeers, name, symbol, decimals, beneficiary, supply, reward);
     }
 
     /**
      * Initialization of smart contract.
      */
-    function initialize(address owner, address[] memory initialPeers) public {
+    function initialize(address owner, address[] memory initialPeers, string memory name, string memory symbol, uint8 decimals, address beneficiary, uint256 supply, uint256 reward) public {
         require(!initialized_);
 
         owner_ = owner;
@@ -53,9 +47,11 @@ contract Master {
         // 0 means ether which is definitely in whitelist
         isToken[address(0)] = true;
 
-        // Create new instance of Sora token
-        xorTokenInstance = new SoraToken();
-        isToken[address(xorTokenInstance)] = true;
+        // Create new instance of the token
+        tokenInstance = new MasterToken(name, symbol, decimals, beneficiary, supply);
+        isToken[address(tokenInstance)] = true;
+
+        proofReward = reward;
 
         initialized_ = true;
     }
@@ -69,9 +65,17 @@ contract Master {
     }
 
     /**
+     * @dev Throws if called when the contract is disabled.
+     */
+    modifier enabled() {
+        require(enabled_);
+        _;
+    }
+
+    /**
      * @return true if `msg.sender` is the owner of the contract.
      */
-    function isOwner() public view returns(bool) {
+    function isOwner() public view returns (bool) {
         return msg.sender == owner_;
     }
 
@@ -80,6 +84,29 @@ contract Master {
      */
     function() external payable {
         require(msg.data.length == 0);
+    }
+
+    function submitProof(
+        bytes32 proofArg,
+        uint8[] memory v,
+        bytes32[] memory r,
+        bytes32[] memory s
+    )
+    public
+    {
+        require(!enabled_, "Proof has been submitted already");
+        require(checkSignatures(
+                keccak256(abi.encodePacked(proofArg)),
+                v,
+                r,
+                s)
+        );
+
+        tokenInstance.mintTokens(msg.sender, proofReward);
+
+        proof = proofArg;
+        enabled_ = true;
+        emit EnableContract(msg.sender, proofArg);
     }
 
     /**
@@ -131,10 +158,10 @@ contract Master {
     {
         require(used[txHash] == false);
         require(checkSignatures(
-            keccak256(abi.encodePacked(peerAddress, txHash)),
-            v,
-            r,
-            s)
+                keccak256(abi.encodePacked(peerAddress, txHash)),
+                v,
+                r,
+                s)
         );
 
         removePeer(peerAddress);
@@ -216,34 +243,28 @@ contract Master {
         address from
     )
     public
+    enabled
     {
         require(checkTokenAddress(tokenAddress));
         require(used[txHash] == false);
         require(checkSignatures(
-            keccak256(abi.encodePacked(tokenAddress, amount, to, txHash, from)),
-            v,
-            r,
-            s)
+                keccak256(abi.encodePacked(tokenAddress, amount, to, txHash, from)),
+                v,
+                r,
+                s)
         );
 
-        if (tokenAddress == address (0)) {
-            if (address(this).balance < amount) {
-                emit InsufficientFundsForWithdrawal(tokenAddress, to);
-            } else {
-                used[txHash] = true;
-                // untrusted transfer, relies on provided cryptographic proof
-                to.transfer(amount);
-            }
+        if (tokenAddress == address(0)) {
+            used[txHash] = true;
+            // untrusted transfer, relies on provided cryptographic proof
+            to.transfer(amount);
         } else {
             IERC20 coin = IERC20(tokenAddress);
-            if (coin.balanceOf(address (this)) < amount) {
-                emit InsufficientFundsForWithdrawal(tokenAddress, to);
-            } else {
-                used[txHash] = true;
-                // untrusted call, relies on provided cryptographic proof
-                coin.transfer(to, amount);
-            }
+            used[txHash] = true;
+            // untrusted call, relies on provided cryptographic proof
+            coin.transfer(to, amount);
         }
+        emit Withdrawal(txHash);
     }
 
     /**
@@ -307,7 +328,7 @@ contract Master {
     }
 
     /**
-     * Mint new XORToken
+     * Mint new Token
      * @param tokenAddress address to mint
      * @param amount how much to mint
      * @param beneficiary destination address
@@ -327,17 +348,19 @@ contract Master {
         address from
     )
     public
+    enabled
     {
-        require(address(xorTokenInstance) == tokenAddress);
+        require(address(tokenInstance) == tokenAddress);
         require(used[txHash] == false);
         require(checkSignatures(
-            keccak256(abi.encodePacked(tokenAddress, amount, beneficiary, txHash, from)),
-            v,
-            r,
-            s)
+                keccak256(abi.encodePacked(tokenAddress, amount, beneficiary, txHash, from)),
+                v,
+                r,
+                s)
         );
 
-        xorTokenInstance.mintTokens(beneficiary, amount);
+        tokenInstance.mintTokens(beneficiary, amount);
         used[txHash] = true;
+        emit Withdrawal(txHash);
     }
 }

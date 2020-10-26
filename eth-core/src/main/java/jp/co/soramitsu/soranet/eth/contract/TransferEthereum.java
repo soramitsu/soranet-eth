@@ -1,8 +1,3 @@
-/*
- * Copyright Soramitsu Co., Ltd. All Rights Reserved.
- * SPDX-License-Identifier: Apache-2.0
- */
-
 package jp.co.soramitsu.soranet.eth.contract;
 
 import org.web3j.abi.TypeReference;
@@ -11,6 +6,7 @@ import org.web3j.abi.datatypes.Type;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.RemoteCall;
+import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tx.Contract;
 import org.web3j.tx.TransactionManager;
@@ -27,11 +23,13 @@ import java.util.Collections;
  * or the org.web3j.codegen.SolidityFunctionWrapperGenerator in the
  * <a href="https://github.com/web3j/web3j/tree/master/codegen">codegen module</a> to update.
  *
- * <p>Generated with web3j version 4.2.0.
+ * <p>Generated with web3j version 4.5.16.
  */
+@SuppressWarnings("rawtypes")
 public class TransferEthereum extends Contract {
+    public static final String BINARY = "608060405234801561001057600080fd5b5060d98061001f6000396000f3fe608060405260043610601c5760003560e01c8063a9059cbb146028575b3615602657600080fd5b005b348015603357600080fd5b50602660048036036040811015604857600080fd5b5060405181356001600160a01b031691602001359082908290600081818185875af1925050503d80600081146098576040519150601f19603f3d011682016040523d82523d6000602084013e609d565b606091505b505050505056fea265627a7a72305820f913d259c671a19b7ce9b74d9417e801eb6de5f751d0a6fa021625bd7fb4578364736f6c63430005090032";
+
     public static final String FUNC_TRANSFER = "transfer";
-    private static final String BINARY = "608060405234801561001057600080fd5b5060d98061001f6000396000f3fe608060405260043610601c5760003560e01c8063a9059cbb146028575b3615602657600080fd5b005b348015603357600080fd5b50602660048036036040811015604857600080fd5b5060405181356001600160a01b031691602001359082908290600081818185875af1925050503d80600081146098576040519150601f19603f3d011682016040523d82523d6000602084013e609d565b606091505b505050505056fea265627a7a72305820db75e9f39aca1bb4d6c9f5c23b2e4ef64add7f8fb955676f7a0b5196f8dd46e164736f6c63430005090032";
 
     @Deprecated
     protected TransferEthereum(String contractAddress, Web3j web3j, Credentials credentials, BigInteger gasPrice, BigInteger gasLimit) {
@@ -87,12 +85,12 @@ public class TransferEthereum extends Contract {
         return deployRemoteCall(TransferEthereum.class, web3j, transactionManager, gasPrice, gasLimit, BINARY, "");
     }
 
-    public RemoteCall<TransactionReceipt> transfer(String to, BigInteger amount) {
+    public RemoteFunctionCall<TransactionReceipt> transfer(String to, BigInteger amount) {
         final Function function = new Function(
                 FUNC_TRANSFER,
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(to),
+                Arrays.asList(new org.web3j.abi.datatypes.Address(160, to),
                         new org.web3j.abi.datatypes.generated.Uint256(amount)),
-                Collections.<TypeReference<?>>emptyList());
+                Collections.emptyList());
         return executeRemoteCallTransaction(function);
     }
 }

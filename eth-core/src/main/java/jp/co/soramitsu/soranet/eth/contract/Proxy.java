@@ -1,8 +1,3 @@
-/*
- * Copyright Soramitsu Co., Ltd. All Rights Reserved.
- * SPDX-License-Identifier: Apache-2.0
- */
-
 package jp.co.soramitsu.soranet.eth.contract;
 
 import org.web3j.abi.TypeReference;
@@ -12,6 +7,7 @@ import org.web3j.abi.datatypes.Type;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.RemoteCall;
+import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.tx.Contract;
 import org.web3j.tx.TransactionManager;
 import org.web3j.tx.gas.ContractGasProvider;
@@ -26,11 +22,13 @@ import java.util.Arrays;
  * or the org.web3j.codegen.SolidityFunctionWrapperGenerator in the
  * <a href="https://github.com/web3j/web3j/tree/master/codegen">codegen module</a> to update.
  *
- * <p>Generated with web3j version 4.2.0.
+ * <p>Generated with web3j version 4.5.16.
  */
+@SuppressWarnings("rawtypes")
 public class Proxy extends Contract {
+    public static final String BINARY = "";
+
     public static final String FUNC_IMPLEMENTATION = "implementation";
-    private static final String BINARY = "";
 
     @Deprecated
     protected Proxy(String contractAddress, Web3j web3j, Credentials credentials, BigInteger gasPrice, BigInteger gasLimit) {
@@ -86,10 +84,10 @@ public class Proxy extends Contract {
         return deployRemoteCall(Proxy.class, web3j, transactionManager, gasPrice, gasLimit, BINARY, "");
     }
 
-    public RemoteCall<String> implementation() {
+    public RemoteFunctionCall<String> implementation() {
         final Function function = new Function(FUNC_IMPLEMENTATION,
-                Arrays.<Type>asList(),
-                Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {
+                Arrays.asList(),
+                Arrays.asList(new TypeReference<Address>() {
                 }));
         return executeRemoteCallSingleValueReturn(function, String.class);
     }

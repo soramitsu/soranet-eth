@@ -1,8 +1,3 @@
-/*
- * Copyright Soramitsu Co., Ltd. All Rights Reserved.
- * SPDX-License-Identifier: Apache-2.0
- */
-
 package jp.co.soramitsu.soranet.eth.contract;
 
 import io.reactivex.Flowable;
@@ -17,7 +12,9 @@ import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.RemoteCall;
+import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.protocol.core.methods.request.EthFilter;
+import org.web3j.protocol.core.methods.response.BaseEventResponse;
 import org.web3j.protocol.core.methods.response.Log;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tx.Contract;
@@ -37,27 +34,29 @@ import java.util.List;
  * or the org.web3j.codegen.SolidityFunctionWrapperGenerator in the
  * <a href="https://github.com/web3j/web3j/tree/master/codegen">codegen module</a> to update.
  *
- * <p>Generated with web3j version 4.2.0.
+ * <p>Generated with web3j version 4.5.16.
  */
+@SuppressWarnings("rawtypes")
 public class Token extends Contract {
+    public static final String BINARY = "";
+
     public static final String FUNC_APPROVE = "approve";
     public static final String FUNC_TRANSFERFROM = "transferFrom";
     public static final String FUNC_BALANCEOF = "balanceOf";
     public static final String FUNC_TRANSFER = "transfer";
     public static final String FUNC_ALLOWANCE = "allowance";
+
     public static final Event TRANSFER_EVENT = new Event("Transfer",
-            Arrays.<TypeReference<?>>asList(new TypeReference<Address>(true) {
+            Arrays.asList(new TypeReference<Address>(true) {
             }, new TypeReference<Address>(true) {
             }, new TypeReference<Uint256>() {
             }));
+
     public static final Event APPROVAL_EVENT = new Event("Approval",
-            Arrays.<TypeReference<?>>asList(new TypeReference<Address>(true) {
+            Arrays.asList(new TypeReference<Address>(true) {
             }, new TypeReference<Address>(true) {
             }, new TypeReference<Uint256>() {
             }));
-    ;
-    private static final String BINARY = "";
-    ;
 
     @Deprecated
     protected Token(String contractAddress, Web3j web3j, Credentials credentials, BigInteger gasPrice, BigInteger gasLimit) {
@@ -113,47 +112,47 @@ public class Token extends Contract {
         return deployRemoteCall(Token.class, web3j, transactionManager, gasPrice, gasLimit, BINARY, "");
     }
 
-    public RemoteCall<TransactionReceipt> approve(String _spender, BigInteger _value) {
+    public RemoteFunctionCall<TransactionReceipt> approve(String _spender, BigInteger _value) {
         final Function function = new Function(
                 FUNC_APPROVE,
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(_spender),
+                Arrays.asList(new org.web3j.abi.datatypes.Address(160, _spender),
                         new org.web3j.abi.datatypes.generated.Uint256(_value)),
-                Collections.<TypeReference<?>>emptyList());
+                Collections.emptyList());
         return executeRemoteCallTransaction(function);
     }
 
-    public RemoteCall<TransactionReceipt> transferFrom(String _from, String _to, BigInteger _value) {
+    public RemoteFunctionCall<TransactionReceipt> transferFrom(String _from, String _to, BigInteger _value) {
         final Function function = new Function(
                 FUNC_TRANSFERFROM,
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(_from),
-                        new org.web3j.abi.datatypes.Address(_to),
+                Arrays.asList(new org.web3j.abi.datatypes.Address(160, _from),
+                        new org.web3j.abi.datatypes.Address(160, _to),
                         new org.web3j.abi.datatypes.generated.Uint256(_value)),
-                Collections.<TypeReference<?>>emptyList());
+                Collections.emptyList());
         return executeRemoteCallTransaction(function);
     }
 
-    public RemoteCall<BigInteger> balanceOf(String _owner) {
+    public RemoteFunctionCall<BigInteger> balanceOf(String _owner) {
         final Function function = new Function(FUNC_BALANCEOF,
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(_owner)),
-                Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {
+                Arrays.asList(new org.web3j.abi.datatypes.Address(160, _owner)),
+                Arrays.asList(new TypeReference<Uint256>() {
                 }));
         return executeRemoteCallSingleValueReturn(function, BigInteger.class);
     }
 
-    public RemoteCall<TransactionReceipt> transfer(String _to, BigInteger _value) {
+    public RemoteFunctionCall<TransactionReceipt> transfer(String _to, BigInteger _value) {
         final Function function = new Function(
                 FUNC_TRANSFER,
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(_to),
+                Arrays.asList(new org.web3j.abi.datatypes.Address(160, _to),
                         new org.web3j.abi.datatypes.generated.Uint256(_value)),
-                Collections.<TypeReference<?>>emptyList());
+                Collections.emptyList());
         return executeRemoteCallTransaction(function);
     }
 
-    public RemoteCall<BigInteger> allowance(String _owner, String _spender) {
+    public RemoteFunctionCall<BigInteger> allowance(String _owner, String _spender) {
         final Function function = new Function(FUNC_ALLOWANCE,
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(_owner),
-                        new org.web3j.abi.datatypes.Address(_spender)),
-                Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {
+                Arrays.asList(new org.web3j.abi.datatypes.Address(160, _owner),
+                        new org.web3j.abi.datatypes.Address(160, _spender)),
+                Arrays.asList(new TypeReference<Uint256>() {
                 }));
         return executeRemoteCallSingleValueReturn(function, BigInteger.class);
     }
@@ -228,9 +227,7 @@ public class Token extends Contract {
         return approvalEventFlowable(filter);
     }
 
-    public static class TransferEventResponse {
-        public Log log;
-
+    public static class TransferEventResponse extends BaseEventResponse {
         public String from;
 
         public String to;
@@ -238,9 +235,7 @@ public class Token extends Contract {
         public BigInteger value;
     }
 
-    public static class ApprovalEventResponse {
-        public Log log;
-
+    public static class ApprovalEventResponse extends BaseEventResponse {
         public String owner;
 
         public String spender;

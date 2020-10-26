@@ -1,8 +1,3 @@
-/*
- * Copyright Soramitsu Co., Ltd. All Rights Reserved.
- * SPDX-License-Identifier: Apache-2.0
- */
-
 package jp.co.soramitsu.soranet.eth.contract;
 
 import io.reactivex.Flowable;
@@ -13,7 +8,9 @@ import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.RemoteCall;
+import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.protocol.core.methods.request.EthFilter;
+import org.web3j.protocol.core.methods.response.BaseEventResponse;
 import org.web3j.protocol.core.methods.response.Log;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tx.Contract;
@@ -33,19 +30,21 @@ import java.util.List;
  * or the org.web3j.codegen.SolidityFunctionWrapperGenerator in the
  * <a href="https://github.com/web3j/web3j/tree/master/codegen">codegen module</a> to update.
  *
- * <p>Generated with web3j version 4.2.0.
+ * <p>Generated with web3j version 4.5.16.
  */
+@SuppressWarnings("rawtypes")
 public class Ownable extends Contract {
+    public static final String BINARY = "";
+
     public static final String FUNC_RENOUNCEOWNERSHIP = "renounceOwnership";
     public static final String FUNC_OWNER = "owner";
     public static final String FUNC_ISOWNER = "isOwner";
     public static final String FUNC_TRANSFEROWNERSHIP = "transferOwnership";
+
     public static final Event OWNERSHIPTRANSFERRED_EVENT = new Event("OwnershipTransferred",
-            Arrays.<TypeReference<?>>asList(new TypeReference<Address>(true) {
+            Arrays.asList(new TypeReference<Address>(true) {
             }, new TypeReference<Address>(true) {
             }));
-    private static final String BINARY = "";
-    ;
 
     @Deprecated
     protected Ownable(String contractAddress, Web3j web3j, Credentials credentials, BigInteger gasPrice, BigInteger gasLimit) {
@@ -101,35 +100,35 @@ public class Ownable extends Contract {
         return deployRemoteCall(Ownable.class, web3j, transactionManager, gasPrice, gasLimit, BINARY, "");
     }
 
-    public RemoteCall<TransactionReceipt> renounceOwnership() {
+    public RemoteFunctionCall<TransactionReceipt> renounceOwnership() {
         final Function function = new Function(
                 FUNC_RENOUNCEOWNERSHIP,
-                Arrays.<Type>asList(),
-                Collections.<TypeReference<?>>emptyList());
+                Arrays.asList(),
+                Collections.emptyList());
         return executeRemoteCallTransaction(function);
     }
 
-    public RemoteCall<String> owner() {
+    public RemoteFunctionCall<String> owner() {
         final Function function = new Function(FUNC_OWNER,
-                Arrays.<Type>asList(),
-                Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {
+                Arrays.asList(),
+                Arrays.asList(new TypeReference<Address>() {
                 }));
         return executeRemoteCallSingleValueReturn(function, String.class);
     }
 
-    public RemoteCall<Boolean> isOwner() {
+    public RemoteFunctionCall<Boolean> isOwner() {
         final Function function = new Function(FUNC_ISOWNER,
-                Arrays.<Type>asList(),
-                Arrays.<TypeReference<?>>asList(new TypeReference<Bool>() {
+                Arrays.asList(),
+                Arrays.asList(new TypeReference<Bool>() {
                 }));
         return executeRemoteCallSingleValueReturn(function, Boolean.class);
     }
 
-    public RemoteCall<TransactionReceipt> transferOwnership(String newOwner) {
+    public RemoteFunctionCall<TransactionReceipt> transferOwnership(String newOwner) {
         final Function function = new Function(
                 FUNC_TRANSFEROWNERSHIP,
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(newOwner)),
-                Collections.<TypeReference<?>>emptyList());
+                Arrays.asList(new org.web3j.abi.datatypes.Address(160, newOwner)),
+                Collections.emptyList());
         return executeRemoteCallTransaction(function);
     }
 
@@ -166,9 +165,7 @@ public class Ownable extends Contract {
         return ownershipTransferredEventFlowable(filter);
     }
 
-    public static class OwnershipTransferredEventResponse {
-        public Log log;
-
+    public static class OwnershipTransferredEventResponse extends BaseEventResponse {
         public String previousOwner;
 
         public String newOwner;

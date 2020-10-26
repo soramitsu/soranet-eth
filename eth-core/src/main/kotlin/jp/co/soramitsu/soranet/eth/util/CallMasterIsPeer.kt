@@ -51,7 +51,7 @@ fun main() {
             peers.forEach {
                 logger.info { "$it is peer: ${master.isPeer(it).send()}" }
             }
-            logger.info { "xor ${master.xorTokenInstance().send()}" }
+            logger.info { "xor ${master.tokenInstance().send()}" }
         }
         .failure { ex ->
             logger.error("Master contract call exception", ex)

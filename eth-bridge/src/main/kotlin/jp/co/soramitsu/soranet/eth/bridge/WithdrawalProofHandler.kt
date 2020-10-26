@@ -13,12 +13,11 @@ import com.d3.commons.util.hex
 import com.d3.commons.util.irohaEscape
 import iroha.protocol.BlockOuterClass
 import jp.co.soramitsu.iroha.java.Utils
-import jp.co.soramitsu.soranet.eth.config.EthereumPasswords
 import jp.co.soramitsu.soranet.eth.provider.EthAddressProvider
 import jp.co.soramitsu.soranet.eth.provider.EthTokensProvider
 import jp.co.soramitsu.soranet.eth.sidechain.util.*
 import mu.KLogging
-import org.apache.commons.codec.binary.Hex
+import org.web3j.crypto.Credentials
 import org.web3j.crypto.WalletUtils
 import java.math.BigDecimal
 
@@ -30,24 +29,19 @@ const val WITHDRAWAL_ACCOUNT_PUBLIC_KEY =
  * Class responsible for withdrawal approval for wallet accounts
  */
 class WithdrawalProofHandler(
-    private val withrdawalTriggerAccountId: String,
+    private val withdrawalTriggerAccountId: String,
     private val tokensProvider: EthTokensProvider,
     private val walletsProvider: EthAddressProvider,
     private val deployHelper: DeployHelper,
     private val queryHelper: IrohaQueryHelper,
     private val irohaConsumer: IrohaConsumer,
-    passwordsConfig: EthereumPasswords
+    private val credentials: Credentials
 ) {
     private val gson = GsonInstance.get()
 
     init {
-        logger.info { "Wallet Withdrawal: Initialization of WithdrawalProofHandler withrdawalTriggerAccountId=$withrdawalTriggerAccountId" }
+        logger.info { "Wallet Withdrawal: Initialization of WithdrawalProofHandler withrdawalTriggerAccountId=$withdrawalTriggerAccountId" }
     }
-
-    private val ethCredential = WalletUtils.loadCredentials(
-        passwordsConfig.credentialsPassword,
-        passwordsConfig.credentialsPath
-    )
 
     /**
      * Filter expansion trigger event and call expansion logic
@@ -61,7 +55,7 @@ class WithdrawalProofHandler(
                 tx.payload.reducedPayload.commandsList
                     .filter { command -> command.hasTransferAsset() }
                     .map { command -> command.transferAsset }
-                    .filter { transfer -> transfer.destAccountId == withrdawalTriggerAccountId }
+                    .filter { transfer -> transfer.destAccountId == withdrawalTriggerAccountId }
                     // check if description is valid Ethereum address
                     .filter { transfer -> WalletUtils.isValidAddress(transfer.description) }
                     .filter { transfer ->
@@ -81,7 +75,7 @@ class WithdrawalProofHandler(
                         createAccountIfNotExists(proofAccountName)
 
                         // write proof
-                        val key = ethCredential.address
+                        val key = credentials.address
                         val proof = createProof(
                             transfer.srcAccountId,
                             transfer.assetId,
@@ -142,11 +136,7 @@ class WithdrawalProofHandler(
                     beneficiary
                 )
         val signatureString = deployHelper.signUserData(hash)
-        val vrs = extractVRS(signatureString)
-        val v = vrs.v.toString(16).replace("0x", "")
-        val r = Hex.encodeHexString(vrs.r).replace("0x", "")
-        val s = Hex.encodeHexString(vrs.s).replace("0x", "")
-        val signature = VRSSignature(v, r, s)
+        val signature = extractVRSSignature(signatureString)
 
         val withdrawalProof = WithdrawalProof(
             accountId,
